@@ -180,9 +180,9 @@
   /* clip-path clips the app's own compositing layer at the rounded corners,
      where overflow and border-radius alone can leave a sliver at odd zooms. */
   .screen { position: absolute; overflow: hidden; background: #000; isolation: isolate; }
-  /* A page with no background shows white, as on a phone; a page with a dark
-     colour scheme paints its own. */
-  .screen iframe { position: absolute; border: 0; background: #fff; display: block; color-scheme: normal; }
+  /* Clear, so nothing but the page shows at the screen's edges at odd zooms;
+     applyLayout puts white behind a page that paints no background. */
+  .screen iframe { position: absolute; border: 0; background: transparent; display: block; color-scheme: normal; }
   .chrome > * { position: absolute; }
   .status {
     left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; z-index: 2;
@@ -926,6 +926,8 @@ function applyLayout(L = screenLayout()) {
   Object.assign(frame.style, {
     left: L.frame.left + 'px', top: L.frame.top + 'px', width: L.frame.width + 'px', height: L.frame.height + 'px',
     transform: kb.pan ? `translateY(${-kb.pan}px)` : '',
+    // A phone shows white behind a page with no background of its own.
+    background: isOpaque(page.background) ? 'transparent' : '#fff',
   })
   const bottom = $('safariBottom')
   if (bottom) { bottom.style.height = L.bottom + 1 + 'px'; bottom.classList.toggle('min', state.barsMin) }
