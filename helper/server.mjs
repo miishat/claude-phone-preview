@@ -121,6 +121,12 @@ async function phoneRoute(req, res, sub) {
 function upstreamHeaders(req) {
   const up = new URL(target.origin)
   const headers = { ...req.headers, host: up.host, 'accept-encoding': 'identity' }
+  // A copy the browser kept from before this helper started was rewritten by
+  // older rules, so only this helper's own copies may be answered with 304.
+  const tag = String(headers['if-none-match'] ?? '')
+  if (tag.endsWith(`${REWRITE_TAG}"`)) headers['if-none-match'] = tag.replaceAll(`${REWRITE_TAG}"`, '"')
+  else if (tag) delete headers['if-none-match']
+  delete headers['if-modified-since']
   if (target.device.ua) headers['user-agent'] = target.device.ua
   if (headers.origin) headers.origin = target.origin
   if (headers.referer) headers.referer = headers.referer.replace(/^https?:\/\/[^/]+/, target.origin)
@@ -130,10 +136,17 @@ function upstreamHeaders(req) {
   return headers
 }
 
+// Marks the ETags of rewritten responses as this helper's.
+const REWRITE_TAG = `-pp${Date.now().toString(36)}`
+
 function rewriteText(text, isHtml, self) {
   // A page's safe-area insets come from the frame, which knows the phone's
   // notch and home indicator; env() inside an iframe is always 0.
-  let out = text.replace(/env\(\s*safe-area-inset-(top|right|bottom|left)/g, 'var(--pp-safe-$1')
+  // Not inside a Tailwind class name such as pb-[calc(52px+env(...))]: the
+  // stylesheet's selector keeps the original name, so a rewritten class in
+  // the page's markup or script would match no rule at all. That rule's value
+  // is rewritten, so the class still gets the phone's inset.
+  let out = text.replace(/(?<!\[[^\s'"`;{}[\]]*)env\(\s*safe-area-inset-(top|right|bottom|left)/g, 'var(--pp-safe-$1')
   // Absolute links back to the app's own origin stay inside the proxy.
   out = out.split(target.origin).join(self)
   if (isHtml) {
@@ -172,6 +185,14 @@ function forward(req, res, net) {
       headers['set-cookie'] = [].concat(headers['set-cookie']).map(c => c.replace(/;\s*domain=[^;]*/i, ''))
     }
     const type = String(headers['content-type'] ?? '')
+    if (type.startsWith('text/html')) {
+      // A page carries the chosen phone's settings, which its ETag knows nothing of.
+      delete headers.etag
+      delete headers['last-modified']
+      headers['cache-control'] = 'no-store'
+    } else if (TEXT.test(type) && headers.etag) {
+      headers.etag = String(headers.etag).replace(/"$/, `${REWRITE_TAG}"`)
+    }
     if (!TEXT.test(type) || req.method === 'HEAD') {
       res.writeHead(upRes.statusCode ?? 502, headers)
       pipePaced(upRes, res, net)
