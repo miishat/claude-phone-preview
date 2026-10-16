@@ -1,6 +1,6 @@
 {
   "name": "phone-preview",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Preview the app you are building in an interactive phone frame in the built-in Browser pane",
   "author": { "name": "Mishat Hassan" }
 }

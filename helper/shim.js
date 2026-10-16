@@ -24,11 +24,14 @@
     define(nav, 'userAgentData', () => undefined)
     define(nav, 'standalone', () => Boolean(config.standalone))
   } else if (navigator.userAgentData) {
+    // A large tablet's Chrome asks for desktop sites, as Linux.
     const brands = navigator.userAgentData.brands
+    const mobile = config.mobile !== false
+    const platform = config.desktopSite ? 'Linux' : 'Android'
     const data = {
-      brands, mobile: true, platform: 'Android',
-      getHighEntropyValues: async () => ({ brands, mobile: true, platform: 'Android', model: config.model || '', platformVersion: '14.0.0' }),
-      toJSON: () => ({ brands, mobile: true, platform: 'Android' }),
+      brands, mobile, platform,
+      getHighEntropyValues: async () => ({ brands, mobile, platform, model: config.desktopSite ? '' : config.model || '', platformVersion: config.desktopSite ? '' : '14.0.0' }),
+      toJSON: () => ({ brands, mobile, platform }),
     }
     define(nav, 'userAgentData', () => data)
   }

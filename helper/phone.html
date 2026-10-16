@@ -64,6 +64,13 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -12px rgba(0,0,0,0.18);
     position: relative; z-index: 5;
   }
+  /* The top bar is one row: the address takes whatever the controls leave. */
+  .top-bar { width: min(860px, calc(100% - 24px)); flex-wrap: nowrap; justify-content: flex-start; }
+  .top-bar .url { flex: 1 1 auto; max-width: none; min-width: 120px; }
+  .top-bar .group { flex: none; }
+  .top-bar .label, .top-bar .switch .text { display: none; }
+  @media (min-width: 900px) { .top-bar .label, .top-bar .switch .text { display: inline; } }
+  @media (max-width: 420px) { .top-bar { flex-wrap: wrap; } .top-bar .url { flex-basis: 100%; } }
   .group { display: flex; align-items: center; gap: 2px; }
   .sep { width: 1px; height: 22px; background: var(--panel-border); margin: 0 2px; }
   .url {
@@ -139,6 +146,13 @@
   .menu .sub { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   .menu .check { color: var(--accent); visibility: hidden; flex: none; }
   .menu .item[aria-checked="true"] .check { visibility: visible; }
+  #deviceMenu { min-width: 290px; }
+  #deviceMenu .item > span:nth-child(2) { white-space: nowrap; }
+  .menu .series { font-weight: 500; }
+  .menu .series .chev { color: var(--muted); flex: none; transition: transform .15s; }
+  .menu .series[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .menu .series.holds > span:nth-child(2)::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 7px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+  .menu .series-list { padding-left: 12px; }
   .menu .hint { margin: 6px 8px 4px; font-size: 11px; color: var(--muted); max-width: 240px; line-height: 1.4; }
   .custom { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px; flex-wrap: wrap; }
   .custom input {
@@ -220,6 +234,11 @@
     flex: 1; height: 40px; border-radius: 20px; background: var(--b-pill); display: flex; align-items: center; gap: 10px;
     padding: 0 14px; font-size: 15px; overflow: hidden; white-space: nowrap;
   }
+  .chrome-bar > button { border: 0; background: transparent; padding: 0; color: inherit; cursor: pointer; display: flex; }
+  .chrome-tabs { display: flex; align-items: flex-end; gap: 6px; padding: 0 10px; background: var(--b-pill); font: 400 13px/1 "Google Sans", Roboto, "Segoe UI", system-ui, sans-serif; }
+  .chrome-tabs .tab { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 220px; height: 32px; padding: 0 12px; border-radius: 10px 10px 0 0; background: var(--b-bg); }
+  .chrome-tabs .tab span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .chrome-tabs .plus { height: 32px; display: flex; align-items: center; font-size: 18px; color: var(--b-muted); }
   .chrome-bar .tabs { width: 20px; height: 20px; border: 2px solid currentColor; border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
   /* Safari's toolbar shrinks to a small address line while the page scrolls down. */
   .safari-bottom { overflow: hidden; }
@@ -301,7 +320,7 @@
 </style>
 </head>
 <body>
-<header class="toolbar" role="toolbar" aria-label="Phone preview controls">
+<header class="toolbar top-bar" role="toolbar" aria-label="Phone preview controls">
   <form class="url" id="urlForm" title="App address">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/></svg>
     <input id="url" spellcheck="false" autocomplete="off" placeholder="localhost:5173" aria-label="App address">
@@ -314,7 +333,7 @@
       <span id="rotateIcon" aria-hidden="true"></span>
       <span class="label" id="rotateLabel">Landscape</span>
     </button>
-    <button class="icon-btn" type="button" id="fold" hidden title="Fold or unfold the phone (F)">
+    <button class="icon-btn" type="button" id="fold" hidden title="Fold or unfold the phone (F)" aria-label="Fold or unfold the phone">
       <span aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16" stroke-dasharray="2 2.2"/></svg></span>
       <span class="label" id="foldLabel">Unfold</span>
     </button>
@@ -332,8 +351,8 @@
     <button class="icon-btn" type="button" id="external" title="Open the app in a new tab" aria-label="Open the app in a new tab">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
     </button>
-    <label class="switch" title="When on, the app reloads by itself after Claude edits a file">
-      <input type="checkbox" id="auto">
+    <label class="switch" title="Reload on edit: the app reloads by itself after Claude edits a file">
+      <input type="checkbox" id="auto" aria-label="Reload on edit">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
       <span class="text">Reload on edit</span>
       <span class="track" aria-hidden="true"></span>
@@ -389,57 +408,156 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const IOS_SAFARI_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1'
+// Safari froze the OS version in its user agent at iOS 26: iOS 27 still
+// says 18_7, and only Version/ tells the Safari release.
+const IOS_SAFARI_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1'
 // A web app opened from the Home Screen leaves out Version/ and Safari/.
-const IOS_APP_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-// Chrome's reduced user agent: every Android phone reports "Android 10; K".
+const IOS_APP_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
 // iPadOS asks for desktop sites: Safari on an iPad says it is a Mac.
-const IPAD_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15'
+const IPAD_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15'
 const IPAD_APP_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)'
-const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36'
+// Chrome's reduced user agent: every Android phone reports "Android 10; K".
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36'
+// Chrome on a large Android tablet asks for desktop sites, as Linux; an
+// installed web app keeps the tablet's own, without "Mobile".
+const ANDROID_TABLET_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36'
+const ANDROID_TABLET_APP_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36'
 
 // Each device in CSS px, portrait, as its maker draws it: the screen, its
 // corner radius, bezel and rim, the camera, and the system's own bars.
-// status: the status bar; home: the home indicator's safe area; safari: the
-// height Safari's toolbar takes (with the home area), so the page gets what
-// Safari leaves, and min, what its shrunken address line takes while the page
-// scrolls; chromeBar: Chrome's address bar; nav: Android's gesture bar.
+// status: the status bar; home: the home indicator's safe area; homeLand and
+// sideLand: the bottom and side insets in landscape; safari: the height
+// Safari's toolbar takes (with the home area), so the page gets what Safari
+// leaves, and min, what its shrunken address line takes while the page
+// scrolls; chromeBar: Chrome's address bar, tabStrip: its tabs on a tablet;
+// nav: Android's gesture bar.
 // kb: the keyboard's height in portrait and landscape, and its suggestion
 // strip (bar), which number pads leave out. iOS adds its 44px form bar.
 // group: where the device menu lists it. A foldable's unfolded entry holds
-// what changes when it opens. Sizes of the newer devices are close, not exact.
+// what changes when it opens. Screen sizes are the makers' resolutions over
+// the pixel ratio; bezels, buttons and the newest islands are drawn by eye.
+
+// What the iPhones of one shape share.
+const NOTCHLESS_393 = {
+  os: 'ios', screen: [393, 852], dpr: 3, radius: 55, bezel: 11, rim: 4.5,
+  status: 59, home: 34, homeLand: 21, sideLand: 59, safari: { bottom: 134, min: 48, landTop: 44 },
+  kb: { h: 336, hLand: 206, bar: 44, barLand: 36 },
+  island: { w: 125, h: 36, top: 11 }, homebar: { w: 140, h: 5, bottom: 8 },
+}
+const PRO_402 = {
+  os: 'ios', screen: [402, 874], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
+  status: 62, home: 34, homeLand: 20, sideLand: 62, safari: { bottom: 134, min: 48, landTop: 44 },
+  kb: { h: 336, hLand: 206, bar: 44, barLand: 36 },
+  island: { w: 125, h: 37, top: 14 }, homebar: { w: 140, h: 5, bottom: 8 },
+  buttons: { left: [[118, 36], [190, 60], [262, 60]], right: [[214, 96], [520, 52]] },
+}
+const PRO_440 = {
+  ...PRO_402, screen: [440, 956],
+  kb: { h: 346, hLand: 210, bar: 44, barLand: 36 },
+  homebar: { w: 150, h: 5, bottom: 8 },
+  buttons: { left: [[124, 36], [200, 64], [278, 64]], right: [[228, 104], [570, 56]] },
+}
+// The iPhone 18 Pro's island is about a third narrower.
+const ISLAND_18 = { w: 82, h: 37, top: 14 }
+// iPads: all at 2x, a 24px status bar, a 20px home indicator, Safari's bar on top.
+const IPAD = {
+  os: 'ios', tablet: true, dpr: 2, radius: 18, bezel: 20, rim: 4,
+  status: 24, home: 20, homeLand: 20, safari: { top: 50 },
+  kb: { h: 313, hLand: 398, bar: 55, barLand: 55 },
+  camera: { d: 7 }, homebar: { w: 200, h: 5, bottom: 7 },
+  buttons: { right: [[90, 50], [150, 50]] },
+}
+
 const DEVICES = {
+  iphone18pro: {
+    ...PRO_402, label: 'iPhone 18 Pro', group: 'iPhone 18', island: ISLAND_18,
+    colors: { Black: '#2f3033', Silver: '#dcdcd8', Glacier: '#b9cddd', Burgundy: '#6b2a33' },
+  },
+  iphone18promax: {
+    ...PRO_440, label: 'iPhone 18 Pro Max', group: 'iPhone 18', island: ISLAND_18,
+    colors: { Black: '#2f3033', Silver: '#dcdcd8', Glacier: '#b9cddd', Burgundy: '#6b2a33' },
+  },
+  iphone17: {
+    ...PRO_402, label: 'iPhone 17', group: 'iPhone 17', bezel: 10,
+    buttons: { left: [[118, 36], [190, 60], [262, 60]], right: [[214, 96], [520, 52]] },
+    colors: { Black: '#2e2f31', White: '#ecebe8', 'Mist Blue': '#a9bccd', Sage: '#b4bca4', Lavender: '#cbbfdc' },
+  },
+  iphoneair: {
+    ...PRO_402, label: 'iPhone Air', group: 'iPhone 17', screen: [420, 912], bezel: 9,
+    status: 68, homeLand: 29, sideLand: 68,
+    kb: { h: 340, hLand: 208, bar: 44, barLand: 36 },
+    island: { w: 125, h: 37, top: 17 }, homebar: { w: 145, h: 5, bottom: 8 },
+    buttons: { left: [[122, 36], [196, 62], [270, 62]], right: [[220, 100], [545, 54]] },
+    colors: { 'Space Black': '#2a2a2c', 'Cloud White': '#efefec', 'Light Gold': '#e9dcc4', 'Sky Blue': '#cbdcea' },
+  },
+  iphone17pro: {
+    ...PRO_402, label: 'iPhone 17 Pro', group: 'iPhone 17',
+    colors: { Silver: '#dadad6', 'Cosmic Orange': '#e0773c', 'Deep Blue': '#3c4a63' },
+  },
+  iphone17promax: {
+    ...PRO_440, label: 'iPhone 17 Pro Max', group: 'iPhone 17',
+    colors: { Silver: '#dadad6', 'Cosmic Orange': '#e0773c', 'Deep Blue': '#3c4a63' },
+  },
+  iphone16: {
+    ...NOTCHLESS_393, label: 'iPhone 16', group: 'iPhone 16',
+    buttons: { left: [[120, 32], [178, 60], [252, 60]], right: [[214, 96], [505, 50]] },
+    colors: { Black: '#3b3c3e', White: '#efefec', Pink: '#f0c6d4', Teal: '#a6cfc8', Ultramarine: '#7d8ce0' },
+  },
+  iphone16plus: {
+    ...NOTCHLESS_393, label: 'iPhone 16 Plus', group: 'iPhone 16', screen: [430, 932],
+    kb: { h: 346, hLand: 210, bar: 44, barLand: 36 }, homebar: { w: 150, h: 5, bottom: 8 },
+    buttons: { left: [[126, 34], [190, 64], [270, 64]], right: [[228, 104], [550, 54]] },
+    colors: { Black: '#3b3c3e', White: '#efefec', Pink: '#f0c6d4', Teal: '#a6cfc8', Ultramarine: '#7d8ce0' },
+  },
+  iphone16pro: {
+    ...PRO_402, label: 'iPhone 16 Pro', group: 'iPhone 16',
+    colors: { 'Desert Titanium': '#bfa48f', 'Natural Titanium': '#c2bcb2', 'White Titanium': '#e8e6e1', 'Black Titanium': '#3d3d3f' },
+  },
+  iphone16promax: {
+    ...PRO_440, label: 'iPhone 16 Pro Max', group: 'iPhone 16',
+    colors: { 'Desert Titanium': '#bfa48f', 'Natural Titanium': '#c2bcb2', 'White Titanium': '#e8e6e1', 'Black Titanium': '#3d3d3f' },
+  },
+  iphone15: {
+    ...NOTCHLESS_393, label: 'iPhone 15', group: 'Older iPhones',
+    buttons: { left: [[120, 32], [178, 60], [252, 60]], right: [[214, 96]] },
+    colors: { Black: '#3b3c3e', Blue: '#d4dee3', Green: '#cfdccb', Yellow: '#ede4c6', Pink: '#ecd0d3' },
+  },
   iphonese: {
-    label: 'iPhone SE', group: 'iPhone', os: 'ios', classic: true, screen: [375, 667], dpr: 2, radius: 0, rim: 3.5,
+    label: 'iPhone SE', group: 'Older iPhones', os: 'ios', classic: true, screen: [375, 667], dpr: 2, radius: 0, rim: 3.5,
     sideBezel: 22, topBezel: 104, bottomBezel: 104, bodyRadius: 58,
     status: 20, home: 0, homeLand: 0, sideLand: 0, safari: { bottom: 99, min: 30, landTop: 44 },
     kb: { h: 260, hLand: 200, bar: 44, barLand: 36 },
     buttons: { left: [[110, 30], [168, 56], [236, 56]], right: [[168, 72]] },
     colors: { Midnight: '#262b33', Starlight: '#f3ede6', Red: '#b5172f' },
   },
-  iphone15: {
-    label: 'iPhone 15', group: 'iPhone', os: 'ios', screen: [393, 852], dpr: 3, radius: 55, bezel: 11, rim: 4.5,
-    status: 59, home: 34, homeLand: 21, sideLand: 59, safari: { bottom: 134, min: 48, landTop: 44 },
-    kb: { h: 336, hLand: 206, bar: 44, barLand: 36 },
-    island: { w: 125, h: 36, top: 11 }, homebar: { w: 140, h: 5, bottom: 8 },
-    buttons: { left: [[120, 32], [178, 60], [252, 60]], right: [[214, 96]] },
-    colors: { Black: '#3b3c3e', Blue: '#d4dee3', Green: '#cfdccb', Yellow: '#ede4c6', Pink: '#ecd0d3' },
+  ipadmini: {
+    ...IPAD, label: 'iPad mini', group: 'iPad', screen: [744, 1133], radius: 21, bezel: 18,
+    kb: { h: 300, hLand: 380, bar: 55, barLand: 55 },
+    camera: { d: 7, edge: 'short' }, homebar: { w: 180, h: 5, bottom: 7 },
+    buttons: { right: [[40, 44]], top: [[560, 44], [620, 44]] },
+    colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Blue: '#b9c7d6', Purple: '#c9bfdc' },
   },
-  iphone16pro: {
-    label: 'iPhone 16–18 Pro', group: 'iPhone', os: 'ios', screen: [402, 874], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
-    status: 62, home: 34, homeLand: 21, sideLand: 62, safari: { bottom: 134, min: 48, landTop: 44 },
-    kb: { h: 336, hLand: 206, bar: 44, barLand: 36 },
-    island: { w: 125, h: 37, top: 14 }, homebar: { w: 140, h: 5, bottom: 8 },
-    buttons: { left: [[118, 36], [190, 60], [262, 60]], right: [[214, 96], [520, 52]] },
-    colors: { 'Desert Titanium': '#bfa48f', 'Natural Titanium': '#c2bcb2', 'White Titanium': '#e8e6e1', 'Black Titanium': '#3d3d3f' },
+  ipad: {
+    ...IPAD, label: 'iPad', group: 'iPad', screen: [820, 1180],
+    colors: { Silver: '#e3e4e5', Blue: '#a9c2dc', Pink: '#efc4cf', Yellow: '#efdf9c' },
   },
-  iphone16promax: {
-    label: 'iPhone 16–18 Pro Max', group: 'iPhone', os: 'ios', screen: [440, 956], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
-    status: 62, home: 34, homeLand: 21, sideLand: 62, safari: { bottom: 134, min: 48, landTop: 44 },
-    kb: { h: 346, hLand: 210, bar: 44, barLand: 36 },
-    island: { w: 125, h: 37, top: 14 }, homebar: { w: 150, h: 5, bottom: 8 },
-    buttons: { left: [[124, 36], [200, 64], [278, 64]], right: [[228, 104], [570, 56]] },
-    colors: { 'Desert Titanium': '#bfa48f', 'Natural Titanium': '#c2bcb2', 'White Titanium': '#e8e6e1', 'Black Titanium': '#3d3d3f' },
+  ipadair: {
+    ...IPAD, label: 'iPad Air 11″', group: 'iPad', screen: [820, 1180],
+    colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Purple: '#cbc3dc', Blue: '#c3d0dc' },
+  },
+  ipadair13: {
+    ...IPAD, label: 'iPad Air 13″', group: 'iPad', screen: [1024, 1366],
+    kb: { h: 360, hLand: 420, bar: 55, barLand: 55 },
+    colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Purple: '#cbc3dc', Blue: '#c3d0dc' },
+  },
+  ipadpro11: {
+    ...IPAD, label: 'iPad Pro 11″', group: 'iPad', screen: [834, 1210], bezel: 16,
+    colors: { 'Space Black': '#2c2c2e', Silver: '#dcdcdc' },
+  },
+  ipadpro13: {
+    ...IPAD, label: 'iPad Pro 13″', group: 'iPad', screen: [1032, 1376], bezel: 16,
+    kb: { h: 360, hLand: 420, bar: 55, barLand: 55 },
+    colors: { 'Space Black': '#2c2c2e', Silver: '#dcdcdc' },
   },
   pixel8: {
     label: 'Pixel 8', group: 'Phones', os: 'android', model: 'Pixel 8', screen: [412, 915], dpr: 2.625, radius: 46, bezel: 13, rim: 5,
@@ -471,22 +589,22 @@ const DEVICES = {
       buttons: { right: [[150, 80], [260, 52]] },
     },
   },
-  ipadair: {
-    label: 'iPad Air', group: 'iPad', os: 'ios', tablet: true, screen: [820, 1180], dpr: 2, radius: 18, bezel: 20, rim: 4,
-    status: 24, home: 20, homeLand: 20, safari: { top: 50 },
-    kb: { h: 313, hLand: 398, bar: 55, barLand: 55 },
-    camera: { d: 7 }, homebar: { w: 200, h: 5, bottom: 7 },
-    buttons: { right: [[90, 50], [150, 50]] },
-    colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Purple: '#cbc3dc', Blue: '#c3d0dc' },
+  pixeltablet: {
+    label: 'Pixel Tablet', group: 'Tablet', os: 'android', tablet: true, model: 'Pixel Tablet', screen: [800, 1280], dpr: 2, radius: 22, bezel: 24, rim: 4,
+    status: 28, statusLand: 28, nav: 24, chromeBar: 56, tabStrip: 40, cutoutLand: 0,
+    kb: { h: 330, hLand: 380, bar: 48, barLand: 48 },
+    camera: { d: 8 }, homebar: { w: 160, h: 4, bottom: 9 },
+    buttons: { top: [[80, 50]], right: [[110, 70]] },
+    colors: { Porcelain: '#e9e4da', Hazel: '#8e9488' },
   },
 }
-// The 16, 17 and 18 Pro share one screen, as do the three Pro Max, and so
-// does the plain iPhone 17.
+// Names the skill and older links use.
 const ALIASES = {
-  galaxys: 'galaxys24', fold: 'galaxyzfold', ipad: 'ipadair',
-  iphone16: 'iphone16pro', iphone17: 'iphone16pro', iphone17pro: 'iphone16pro', iphone18pro: 'iphone16pro',
-  iphone17promax: 'iphone16promax', iphone18promax: 'iphone16promax',
+  galaxys: 'galaxys24', fold: 'galaxyzfold', tablet: 'pixeltablet',
+  air: 'iphoneair', iphone17air: 'iphoneair', ipadair11: 'ipadair', ipadmini7: 'ipadmini',
 }
+// Device menu groups that open and close; the one holding the current device starts open.
+const SERIES = ['iPhone 18', 'iPhone 17', 'iPhone 16', 'Older iPhones', 'iPad']
 
 // The device as drawn now: a custom size, or a foldable opened up.
 function dev() {
@@ -605,7 +723,7 @@ const isOpaque = css => css && !/rgba\([^)]*,\s*0\)|transparent/.test(css)
 function layoutFor(d, land, mode, isCover, min = false) {
   const [sw, sh] = land ? [d.screen[1], d.screen[0]] : d.screen
   const L = { sw, sh, status: 0, top: 0, bottom: 0, left: 0, right: 0, safe: { top: 0, right: 0, bottom: 0, left: 0 }, bars: [], isStatusOver: false }
-  if (d.tablet) {
+  if (d.tablet && d.os === 'ios') {
     // An iPad keeps its status bar in both orientations, Safari's bar sits on
     // top, and nothing tucks away as the page scrolls.
     L.status = d.status
@@ -670,7 +788,7 @@ function layoutFor(d, land, mode, isCover, min = false) {
     // Chrome and installed apps both keep the page below the status bar;
     // cover lets it run under the gesture bar and past the camera cutout.
     if (mode === 'browser') {
-      L.top = status + (min ? 0 : d.chromeBar)
+      L.top = status + (min ? 0 : d.chromeBar + (d.tabStrip || 0))
       L.bars.push('chrome-bar')
     } else {
       L.top = status
@@ -696,8 +814,10 @@ function shimConfig() {
   const large = layoutFor(d, state.landscape, state.mode, page.isCover, true).frame.height
   const isResized = kb.open && kbMode() === 'content'
   return {
-    ua: !ios ? ANDROID_UA : d.tablet ? (state.mode === 'app' ? IPAD_APP_UA : IPAD_UA) : state.mode === 'app' ? IOS_APP_UA : IOS_SAFARI_UA,
-    platform: !ios ? 'Linux armv81' : d.tablet ? 'MacIntel' : 'iPhone',
+    ua: !ios ? (!d.tablet ? ANDROID_UA : state.mode === 'app' ? ANDROID_TABLET_APP_UA : ANDROID_TABLET_UA)
+      : d.tablet ? (state.mode === 'app' ? IPAD_APP_UA : IPAD_UA) : state.mode === 'app' ? IOS_APP_UA : IOS_SAFARI_UA,
+    platform: !ios ? (d.tablet && state.mode !== 'app' ? 'Linux x86_64' : 'Linux armv81') : d.tablet ? 'MacIntel' : 'iPhone',
+    mobile: !d.tablet, desktopSite: !ios && d.tablet && state.mode !== 'app',
     os: d.os, model: d.model || '', dpr: d.dpr, screen: d.screen,
     landscape: state.landscape, standalone: state.mode === 'app', safe: L.safe,
     collapses: state.mode === 'browser' && !d.tablet, barsMin: state.barsMin, network: state.network,
@@ -747,7 +867,7 @@ function statusBarHtml(d, L, color, background) {
   const gen = net === '3g' ? '3G' : net === 'fast4g' ? '5G' : d.os === 'ios' ? 'LTE' : '4G'
   const tag = `<span style="font-size:${d.os === 'android' ? 11 : 12}px;font-weight:600;letter-spacing:-.2px">${gen}</span>`
   const signal = net === 'offline' ? plane : net === 'online' ? (d.os === 'android' ? wifi + bars : bars + wifi) : (d.os === 'android' ? tag + bars : bars + tag)
-  if (d.tablet) {
+  if (d.tablet && d.os === 'ios') {
     const day = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     return `<div class="status" style="${style};padding:0 20px;font-size:12px"><span><span data-clock>${clock()}</span>&nbsp;&nbsp;${day}</span><span class="icons">${net === 'offline' ? plane : net === 'online' ? wifi : tag}${battery}</span></div>`
   }
@@ -789,10 +909,12 @@ function buildBody() {
   const buttons = []
   for (const [side, list] of Object.entries(d.buttons)) {
     for (const [at, len] of list) {
-      const pos = !land
-        ? `top:${at}px;height:${len}px;${side}:-3px`
-        // Turned a quarter clockwise: the left edge becomes the top.
-        : `width:${len}px;height:3.5px;left:${side === 'left' ? W - at - len : at}px;${side === 'left' ? 'top' : 'bottom'}:-3px`
+      // Turned a quarter clockwise: the left edge becomes the top, the top the right.
+      const pos = side === 'top'
+        ? (!land ? `left:${at}px;width:${len}px;height:3.5px;top:-3px` : `top:${at}px;height:${len}px;right:-3px`)
+        : !land
+          ? `top:${at}px;height:${len}px;${side}:-3px`
+          : `width:${len}px;height:3.5px;left:${side === 'left' ? W - at - len : at}px;${side === 'left' ? 'top' : 'bottom'}:-3px`
       buttons.push(`<div class="btn-side" style="${pos};background:linear-gradient(90deg, ${shade(btnColor, -0.08)}, ${btnColor}, ${shade(btnColor, -0.08)})"></div>`)
     }
   }
@@ -823,7 +945,12 @@ function buildBody() {
   }
   if (d.camera) {
     const r = d.camera.d / 2
-    deco = land
+    // Most tablets keep the camera on the long edge, at the top in landscape;
+    // the iPad mini keeps it at the top in portrait.
+    const onTop = d.camera.edge === 'short' ? !land : land
+    deco = d.camera.edge === 'short' && land
+      ? `<div class="camera" style="width:${d.camera.d}px;height:${d.camera.d}px;right:${bz.r / 2 - r}px;top:calc(50% - ${r}px);background:#141416;box-shadow:inset 0 0 0 1.5px #2a2a2d"></div>`
+      : onTop
       ? `<div class="camera" style="width:${d.camera.d}px;height:${d.camera.d}px;left:calc(50% - ${r}px);top:${bz.t / 2 - r}px;background:#141416;box-shadow:inset 0 0 0 1.5px #2a2a2d"></div>`
       : `<div class="camera" style="width:${d.camera.d}px;height:${d.camera.d}px;left:${bz.l / 2 - r}px;top:calc(50% - ${r}px);background:#141416;box-shadow:inset 0 0 0 1.5px #2a2a2d"></div>`
   }
@@ -882,8 +1009,13 @@ function buildScreen() {
   if (L.bars.includes('chrome-bar')) {
     const bg = page.theme || null
     const tone = bg ? (isLightColor(bg) ? 'light' : 'dark') : browserTone
-    parts.push(`<div class="browser chrome-bar ${tone}" id="chromeBar" style="top:${L.status}px;height:${d.chromeBar + 1}px;${bg ? `background:${bg};` : ''}left:${L.left}px">
-      <div class="field">${ICON.info}<span>${host}</span></div><div class="tabs">1</div>${ICON.dots}</div>`)
+    // On a tablet Chrome shows its tabs above the address bar.
+    if (d.tabStrip) {
+      parts.push(`<div class="browser chrome-tabs ${tone}" style="top:${L.status}px;height:${d.tabStrip + 1}px;left:${L.left}px;right:0">
+        <div class="tab"><span>${hostOf(state.url)}</span><span aria-hidden="true">×</span></div><span class="plus" aria-hidden="true">+</span></div>`)
+    }
+    parts.push(`<div class="browser chrome-bar ${tone}" id="chromeBar" style="top:${L.status + (d.tabStrip || 0)}px;height:${d.chromeBar + 1}px;${bg ? `background:${bg};` : ''}left:${L.left}px">
+      ${d.tablet ? `<button data-act="back" aria-label="Back">${ICON.back}</button><button data-act="forward" aria-label="Forward">${ICON.forward}</button><button data-act="reload" aria-label="Reload">${ICON.reload}</button>` : ''}<div class="field">${ICON.info}<span>${host}</span></div>${d.tablet ? '' : '<div class="tabs">1</div>'}${ICON.dots}</div>`)
   }
   const stripBg = pageBg || sysBg
   if (L.bars.includes('home-strip') && L.bottom) {
@@ -1384,6 +1516,7 @@ function toast(text, ms = 1600) {
 const WIFI = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.6" r=".9" fill="currentColor"/></svg>'
 const CELL = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="15" width="3.5" height="5" rx="1"/><rect x="8.5" y="11" width="3.5" height="9" rx="1"/><rect x="14" y="7" width="3.5" height="13" rx="1"/><rect x="19.5" y="3" width="3" height="17" rx="1" opacity=".35"/></svg>'
 const PLANE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5Z"/></svg>'
+const CHEVRON = '<svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'
 const CHECK = '<svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>'
 const NETWORKS = {
   online: { label: 'Online', note: 'Full speed', icon: WIFI },
@@ -1414,15 +1547,25 @@ function pickDevice(id) {
   navigate()
 }
 
-// The menu shows one system's devices at a time, starting with the current one's.
+// The menu shows one system's devices at a time, starting with the current
+// one's. Each iPhone generation and the iPads fold into one row each; the
+// one holding the current device starts open.
 let menuOs = 'ios'
+let openSeries = new Set()
 function fillDeviceMenu() {
   const groups = {}
   for (const [id, d] of Object.entries(DEVICES)) if (d.os === menuOs) (groups[d.group] ??= []).push([id, d])
   const systems = `<div class="seg systems" role="radiogroup" aria-label="System">${[['ios', 'iOS'], ['android', 'Android']].map(([os, name]) =>
     `<button type="button" role="radio" aria-checked="${menuOs === os}" data-system="${os}">${name}</button>`).join('')}</div>`
-  const items = Object.entries(groups).map(([group, list]) => `<h6>${group}</h6>` + list.map(([id, d]) =>
-    `<button class="item" type="button" role="menuitemradio" aria-checked="${id === state.device}" data-device="${id}">${GLYPHS[glyphOf(d)]}<span>${d.label}</span><span class="sub">${d.screen[0]} × ${d.screen[1]}</span>${CHECK}</button>`).join('')).join('')
+  const item = ([id, d]) =>
+    `<button class="item" type="button" role="menuitemradio" aria-checked="${id === state.device}" data-device="${id}">${GLYPHS[glyphOf(d)]}<span>${d.label}</span><span class="sub">${d.screen[0]} × ${d.screen[1]}</span>${CHECK}</button>`
+  const items = Object.entries(groups).map(([group, list]) => {
+    if (!SERIES.includes(group)) return `<h6>${group}</h6>` + list.map(item).join('')
+    const isOpen = openSeries.has(group)
+    const holds = list.some(([id]) => id === state.device)
+    return `<button class="item series${holds ? ' holds' : ''}" type="button" aria-expanded="${isOpen}" data-series="${group}">${CHEVRON}<span>${group}</span><span class="sub">${list.length}</span></button>`
+      + (isOpen ? `<div class="series-list">${list.map(item).join('')}</div>` : '')
+  }).join('')
   const c = state.custom
   $('deviceMenu').innerHTML = systems + items + `<h6>Custom ${menuOs === 'ios' ? 'iOS' : 'Android'} size</h6>
     <form class="custom" id="customForm">
@@ -1454,12 +1597,21 @@ function toggleMenu(button, menu, fill) {
 }
 $('deviceBtn').onclick = () => {
   menuOs = dev().os
+  openSeries = new Set(state.device in DEVICES ? [DEVICES[state.device].group] : [])
   toggleMenu($('deviceBtn'), $('deviceMenu'), fillDeviceMenu)
 }
 $('netBtn').onclick = () => toggleMenu($('netBtn'), $('netMenu'), fillNetMenu)
 $('deviceMenu').addEventListener('click', e => {
   const item = e.target.closest('[data-device]')
   if (item) return pickDevice(item.dataset.device)
+  const series = e.target.closest('[data-series]')
+  if (series) {
+    const name = series.dataset.series
+    openSeries.has(name) ? openSeries.delete(name) : openSeries.add(name)
+    fillDeviceMenu()
+    $('deviceMenu').querySelector(`[data-series="${name}"]`).focus()
+    return
+  }
   const system = e.target.closest('[data-system]')
   if (system && system.dataset.system !== menuOs) {
     menuOs = system.dataset.system

@@ -5,8 +5,10 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 const DEFAULT_URL = 'http://localhost:5173'
 // The devices the frame knows; a word among them is a device, not an address.
 const DEVICES = new Set([
-  'iphonese', 'iphone15', 'iphone16pro', 'iphone16promax', 'iphone17pro', 'iphone17promax', 'iphone18pro', 'iphone18promax',
-  'pixel8', 'galaxys24', 'galaxys', 'galaxyzfold', 'fold', 'ipadair', 'ipad',
+  'iphonese', 'iphone15', 'iphone16', 'iphone16plus', 'iphone16pro', 'iphone16promax',
+  'iphone17', 'iphoneair', 'air', 'iphone17air', 'iphone17pro', 'iphone17promax', 'iphone18pro', 'iphone18promax',
+  'ipadmini', 'ipad', 'ipadair', 'ipadair11', 'ipadair13', 'ipadpro11', 'ipadpro13',
+  'pixel8', 'galaxys24', 'galaxys', 'galaxyzfold', 'fold', 'pixeltablet', 'tablet',
 ])
 // Where helper/server.mjs listens first; a server Claude started by hand for
 // the Browser pane is usually here.
