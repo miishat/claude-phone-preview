@@ -129,7 +129,9 @@
   /* clip-path clips the app's own compositing layer at the rounded corners,
      where overflow and border-radius alone can leave a sliver at odd zooms. */
   .screen { position: absolute; overflow: hidden; background: #000; isolation: isolate; }
-  .screen iframe { position: absolute; border: 0; background: transparent; display: block; color-scheme: normal; }
+  /* A page with no background shows white, as on a phone; a page with a dark
+     colour scheme paints its own. */
+  .screen iframe { position: absolute; border: 0; background: #fff; display: block; color-scheme: normal; }
   .chrome > * { position: absolute; }
   .status {
     left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; z-index: 2;
@@ -168,6 +170,59 @@
     padding: 0 14px; font-size: 15px; overflow: hidden; white-space: nowrap;
   }
   .chrome-bar .tabs { width: 20px; height: 20px; border: 2px solid currentColor; border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  /* Safari's toolbar shrinks to a small address line while the page scrolls down. */
+  .safari-bottom { overflow: hidden; }
+  .safari-bottom .mini { display: none; width: 100%; height: 22px; border: 0; padding: 0; background: transparent; color: var(--b-text); font: 500 12px/22px -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif; cursor: pointer; justify-content: center; }
+  .safari-bottom.min { border-top: 0; }
+  .safari-bottom.min .full { display: none; }
+  .safari-bottom.min .mini { display: flex; }
+  .safari-top, .chrome-bar { overflow: hidden; }
+  .screen iframe { transition: transform .25s ease; }
+  .screen.anim iframe { transition: top .25s ease, height .25s ease, transform .25s ease; }
+  .screen.anim .browser { transition: height .25s ease; }
+
+  /* The phone's on-screen keyboard. */
+  .kb {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: flex; flex-direction: column;
+    transform: translateY(101%); transition: transform .28s cubic-bezier(.2, .8, .2, 1); visibility: hidden;
+    user-select: none; -webkit-user-select: none; touch-action: none; cursor: default;
+    background: var(--kb-bg); color: var(--kb-text);
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  }
+  .kb.open { transform: none; visibility: visible; }
+  .kb.ios.light { --kb-bg: #d1d4da; --kb-key: #fff; --kb-mod: #abb1ba; --kb-text: #000; --kb-shadow: 0 1px 0 rgba(0,0,0,.32); --kb-acc: #f4f4f6; --kb-tint: #007aff; --kb-muted: #5d5f63; }
+  .kb.ios.dark { --kb-bg: #2b2b2d; --kb-key: #6b6b6d; --kb-mod: #464648; --kb-text: #fff; --kb-shadow: 0 1px 0 rgba(0,0,0,.6); --kb-acc: #2b2b2d; --kb-tint: #0a84ff; --kb-muted: #a0a0a5; }
+  .kb.android.light { --kb-bg: #eef0f5; --kb-key: #fff; --kb-mod: #d6deec; --kb-text: #1f1f1f; --kb-shadow: none; --kb-tint: #0b57d0; --kb-on-tint: #fff; --kb-muted: #5f6368; }
+  .kb.android.dark { --kb-bg: #1f2024; --kb-key: #3c3e43; --kb-mod: #2d3a50; --kb-text: #e3e3e3; --kb-shadow: none; --kb-tint: #a8c7fa; --kb-on-tint: #062e6f; --kb-muted: #a5a8ad; }
+  .kb .acc { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: var(--kb-acc); color: var(--kb-tint); border-bottom: .5px solid rgba(128,128,128,.3); }
+  .kb .acc .arrows { display: flex; gap: 26px; }
+  .kb .acc [data-k] { cursor: pointer; display: flex; align-items: center; }
+  .kb .acc [data-k="hide"] { font-weight: 600; font-size: 16px; }
+  .kb .suggest { flex: none; display: flex; align-items: center; font-size: 16px; }
+  .kb .suggest span { flex: 1; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 6px; }
+  .kb.ios .suggest span + span { border-left: 1px solid rgba(128,128,128,.35); }
+  .kb.android .suggest { justify-content: space-around; color: var(--kb-muted); padding: 0 8px; }
+  .kb.android .suggest span { flex: none; display: flex; }
+  .kb .rows { flex: none; display: flex; flex-direction: column; padding: 0 3px; }
+  .kb .row { flex: 1; display: flex; gap: 6px; padding: 5px 0; min-height: 0; }
+  .kb .k {
+    flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 1px;
+    background: var(--kb-key); border-radius: 5px; box-shadow: var(--kb-shadow); font-size: 23px; line-height: 1; cursor: pointer;
+  }
+  .kb .k.mod { background: var(--kb-mod); font-size: 16px; }
+  .kb .k.gap { background: transparent; box-shadow: none; pointer-events: none; }
+  .kb .k.tint { background: var(--kb-tint); color: var(--kb-on-tint, #fff); }
+  .kb .k.down { background: var(--kb-mod); }
+  .kb .k.mod.down { background: var(--kb-key); }
+  .kb.shift .k.letter { text-transform: uppercase; }
+  .kb.shift [data-k="shift"] path { fill: currentColor; }
+  .kb .pad .k { flex-direction: column; font-size: 25px; }
+  .kb .pad .k small { font-size: 9px; letter-spacing: 2px; font-weight: 600; }
+  .kb.android .k { border-radius: 6px; font-size: 21px; font-family: "Google Sans", Roboto, "Segoe UI", system-ui, sans-serif; }
+  .kb.android .k.tint { border-radius: 10px; }
+  .kb .foot { flex: none; display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 24px 0; }
+  .kb .foot [data-k] { cursor: pointer; display: flex; }
+  .kb.android .foot { align-items: center; padding: 0 22px; color: var(--kb-muted); }
   .loading {
     position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center;
     background: #fff; color: #6b6963; font-size: 13px; text-align: center; padding: 24px; transition: opacity .25s;
@@ -241,6 +296,7 @@
         <div id="deco"></div>
         <div class="screen" id="screen">
           <div class="chrome" id="chrome"></div>
+          <div class="kb" id="kb" aria-hidden="true"></div>
           <div class="loading" id="loading"><div class="spinner"></div><div>Loading…</div></div>
         </div>
       </div>
@@ -254,6 +310,13 @@
     <div class="seg" id="modes" role="radiogroup" aria-label="How the app is opened"></div>
     <span class="sep"></span>
     <div class="swatches" id="swatches" role="radiogroup" aria-label="Frame colour"></div>
+    <span class="sep"></span>
+    <label class="switch" title="Show the phone's keyboard when you tap a text field">
+      <input type="checkbox" id="kbOn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12.5h.01M10 12.5h.01M14 12.5h.01M18 12.5h.01M8 16h8"/></svg>
+      <span class="text">Keyboard</span>
+      <span class="track" aria-hidden="true"></span>
+    </label>
   </div>
   <div class="meta" id="meta" aria-live="polite"></div>
 </footer>
@@ -270,11 +333,15 @@ const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML
 // corner radius, bezel and rim, the camera, and the system's own bars.
 // status: the status bar; home: the home indicator's safe area; safari: the
 // height Safari's toolbar takes (with the home area), so the page gets what
-// Safari leaves; chromeBar: Chrome's address bar; nav: Android's gesture bar.
+// Safari leaves, and min, what its shrunken address line takes while the page
+// scrolls; chromeBar: Chrome's address bar; nav: Android's gesture bar.
+// kb: the keyboard's height in portrait and landscape, and its suggestion
+// strip (bar), which number pads leave out. iOS adds its 44px form bar.
 const DEVICES = {
   iphone15: {
     label: 'iPhone 15', os: 'ios', screen: [393, 852], dpr: 3, radius: 55, bezel: 11, rim: 4.5,
-    status: 59, home: 34, homeLand: 21, sideLand: 59, safari: { bottom: 134, landTop: 44 },
+    status: 59, home: 34, homeLand: 21, sideLand: 59, safari: { bottom: 134, min: 48, landTop: 44 },
+    kb: { h: 336, hLand: 206, bar: 44, barLand: 36 },
     island: { w: 125, h: 36, top: 11 }, homebar: { w: 140, h: 5, bottom: 8 },
     buttons: { left: [[120, 32], [178, 60], [252, 60]], right: [[214, 96]] },
     colors: { Black: '#3b3c3e', Blue: '#d4dee3', Green: '#cfdccb', Yellow: '#ede4c6', Pink: '#ecd0d3' },
@@ -282,13 +349,15 @@ const DEVICES = {
   iphonese: {
     label: 'iPhone SE', os: 'ios', classic: true, screen: [375, 667], dpr: 2, radius: 0, rim: 3.5,
     sideBezel: 22, topBezel: 104, bottomBezel: 104, bodyRadius: 58,
-    status: 20, home: 0, homeLand: 0, sideLand: 0, safari: { bottom: 99, landTop: 44 },
+    status: 20, home: 0, homeLand: 0, sideLand: 0, safari: { bottom: 99, min: 30, landTop: 44 },
+    kb: { h: 260, hLand: 200, bar: 44, barLand: 36 },
     buttons: { left: [[110, 30], [168, 56], [236, 56]], right: [[168, 72]] },
     colors: { Midnight: '#262b33', Starlight: '#f3ede6', Red: '#b5172f' },
   },
   pixel8: {
     label: 'Pixel 8', os: 'android', model: 'Pixel 8', screen: [412, 915], dpr: 2.625, radius: 46, bezel: 13, rim: 5,
     status: 36, statusLand: 28, nav: 24, chromeBar: 56, cutoutLand: 36,
+    kb: { h: 320, hLand: 236, bar: 44, barLand: 40 },
     hole: { d: 18, top: 13 }, homebar: { w: 108, h: 4, bottom: 9 },
     buttons: { right: [[208, 64], [300, 120]] },
     colors: { Obsidian: '#2c2d30', Hazel: '#8e9488', Rose: '#e9cfc7' },
@@ -296,6 +365,7 @@ const DEVICES = {
   galaxys24: {
     label: 'Galaxy S24', os: 'android', model: 'SM-S921B', screen: [360, 780], dpr: 3, radius: 34, bezel: 9, rim: 4,
     status: 32, statusLand: 26, nav: 24, chromeBar: 56, cutoutLand: 30,
+    kb: { h: 302, hLand: 226, bar: 42, barLand: 38 },
     hole: { d: 14, top: 11 }, homebar: { w: 96, h: 4, bottom: 8 },
     buttons: { right: [[176, 96], [296, 52]] },
     colors: { Onyx: '#2a2b2e', Marble: '#cfcfcc', Violet: '#7d7aa3', Amber: '#efe2b3' },
@@ -333,11 +403,12 @@ const state = {
   landscape: q.has('landscape') ? q.get('landscape') === '1' : false,
   zoom: (z => (z === 'fit' || (typeof z === 'number' && z >= 25 && z <= 200) ? z : z === 'actual' ? 100 : 'fit'))(store.get('zoom', 'fit')),
   colors: store.get('colors', {}),
+  barsMin: false,
 }
 if (!DEVICES[state.device]) state.device = 'iphone15'
 
 // What the page told us about itself, through the shim.
-let page = { isCover: false, theme: null, barStyle: null, background: null }
+let page = { isCover: false, theme: null, barStyle: null, background: null, widget: null }
 
 const frame = document.createElement('iframe')
 frame.title = 'App preview'
@@ -386,7 +457,8 @@ const isOpaque = css => css && !/rgba\([^)]*,\s*0\)|transparent/.test(css)
 // Where everything goes on the screen for this device, orientation and mode:
 // the system's bars, the browser's bars, the page's box, and the safe-area
 // insets the page reads from env(safe-area-inset-*).
-function layoutFor(d, land, mode, isCover) {
+// min: the browser's bars are tucked away while the page scrolls.
+function layoutFor(d, land, mode, isCover, min = false) {
   const [sw, sh] = land ? [d.screen[1], d.screen[0]] : d.screen
   const L = { sw, sh, status: 0, top: 0, bottom: 0, left: 0, right: 0, safe: { top: 0, right: 0, bottom: 0, left: 0 }, bars: [], isStatusOver: false }
   if (d.os === 'ios') {
@@ -394,7 +466,7 @@ function layoutFor(d, land, mode, isCover) {
       L.status = d.status
       if (mode === 'browser') {
         L.top = d.status
-        L.bottom = d.safari.bottom
+        L.bottom = min ? d.safari.min : d.safari.bottom
         L.bars.push('safari-bottom')
       } else {
         // A Home Screen app sits below an opaque status bar, unless it asks
@@ -420,7 +492,7 @@ function layoutFor(d, land, mode, isCover) {
       L.left = L.right = side
       if (isCover) L.safe.left = L.safe.right = d.sideLand
       if (mode === 'browser') {
-        L.top = d.safari.landTop
+        L.top = min ? 0 : d.safari.landTop
         L.bottom = d.homeLand
         L.bars.push('safari-top')
         if (d.homeLand) L.bars.push('home-strip')
@@ -439,7 +511,7 @@ function layoutFor(d, land, mode, isCover) {
     // Chrome and installed apps both keep the page below the status bar;
     // cover lets it run under the gesture bar and past the camera cutout.
     if (mode === 'browser') {
-      L.top = status + d.chromeBar
+      L.top = status + (min ? 0 : d.chromeBar)
       L.bars.push('chrome-bar')
     } else {
       L.top = status
@@ -457,14 +529,44 @@ function layoutFor(d, land, mode, isCover) {
 // What the shim tells the app about the phone.
 function shimConfig() {
   const d = DEVICES[state.device]
-  const L = layoutFor(d, state.landscape, state.mode, page.isCover)
+  const L = screenLayout()
   const ios = d.os === 'ios'
+  // 100vh and 100lvh are the viewport with the bars tucked away, 100svh with
+  // them shown; a keyboard that resizes the page shrinks all of them.
+  const small = layoutFor(d, state.landscape, state.mode, page.isCover, false).frame.height
+  const large = layoutFor(d, state.landscape, state.mode, page.isCover, true).frame.height
+  const isResized = kb.open && kbMode() === 'content'
   return {
     ua: ios ? (state.mode === 'app' ? IOS_APP_UA : IOS_SAFARI_UA) : ANDROID_UA,
     platform: ios ? 'iPhone' : 'Linux armv81',
     os: d.os, model: d.model || '', dpr: d.dpr, screen: d.screen,
     landscape: state.landscape, standalone: state.mode === 'app', safe: L.safe,
+    collapses: state.mode === 'browser', barsMin: state.barsMin,
+    vh: isResized ? { small: L.frame.height, large: L.frame.height } : { small, large },
+    keyboard: kb.open ? { mode: kbMode(), overlap: L.overlap } : null,
   }
+}
+
+// The layout as it stands now: bars shown or tucked away, and the keyboard,
+// which either covers the page's bottom (overlap) or shrinks the page.
+function screenLayout() {
+  const d = DEVICES[state.device]
+  const L = layoutFor(d, state.landscape, state.mode, page.isCover, state.barsMin)
+  L.overlap = 0
+  if (kb.open) {
+    const kbTop = L.sh - kbHeight(d)
+    if (kbMode() === 'content') L.frame.height = Math.max(0, Math.min(L.frame.height, kbTop - L.frame.top))
+    else L.overlap = Math.max(0, L.frame.top + L.frame.height - kbTop)
+  }
+  return L
+}
+
+// iOS never resizes the page for the keyboard: it covers the bottom and the
+// visual viewport shrinks. Chrome does the same unless the page's viewport
+// tag asks for interactive-widget=resizes-content or overlays-content.
+function kbMode() {
+  if (DEVICES[state.device].os === 'ios') return 'visual'
+  return page.widget === 'resizes-content' ? 'content' : page.widget === 'overlays-content' ? 'overlay' : 'visual'
 }
 
 function clock() {
@@ -562,10 +664,7 @@ function buildBody() {
 function buildScreen() {
   const d = DEVICES[state.device]
   const land = state.landscape
-  const L = layoutFor(d, land, state.mode, page.isCover)
-  Object.assign(frame.style, {
-    left: L.frame.left + 'px', top: L.frame.top + 'px', width: L.frame.width + 'px', height: L.frame.height + 'px',
-  })
+  const L = screenLayout()
 
   // The colour behind the system's bars: the page's theme-color as Safari and
   // Chrome use it, else the page's own background, else the system's.
@@ -589,17 +688,18 @@ function buildScreen() {
   const host = hostOf(state.url, d.os === 'android')
   if (L.bars.includes('safari-bottom')) {
     const tools = `<div class="tools"><button data-act="back" aria-label="Back">${ICON.back}</button><button data-act="forward" aria-label="Forward">${ICON.forward}</button><button tabindex="-1" aria-hidden="true">${ICON.share}</button><button tabindex="-1" aria-hidden="true">${ICON.book}</button><button tabindex="-1" aria-hidden="true">${ICON.tabs}</button></div>`
-    parts.push(`<div class="browser safari-bottom ${browserTone}" style="height:${L.bottom + 1}px">
-      <div class="pill"><span class="aa">ᴀA</span><span class="host">${host}</span><button data-act="reload" aria-label="Reload">${ICON.reload}</button></div>${tools}</div>`)
+    parts.push(`<div class="browser safari-bottom ${browserTone}" id="safariBottom" style="height:${L.bottom + 1}px">
+      <div class="full"><div class="pill"><span class="aa">ᴀA</span><span class="host">${host}</span><button data-act="reload" aria-label="Reload">${ICON.reload}</button></div>${tools}</div>
+      <button class="mini" data-act="expand" aria-label="Show Safari's toolbar">${hostOf(state.url)}</button></div>`)
   }
   if (L.bars.includes('safari-top')) {
-    parts.push(`<div class="browser safari-top ${browserTone}" style="height:${L.top + 1}px;padding:0 ${L.right}px 0 ${L.left}px">
+    parts.push(`<div class="browser safari-top ${browserTone}" id="safariTop" style="height:${L.top + 1}px;padding:0 ${L.right}px 0 ${L.left}px">
       <div class="pill"><span class="aa">ᴀA</span><span class="host">${host}</span><button data-act="reload" aria-label="Reload">${ICON.reload}</button></div></div>`)
   }
   if (L.bars.includes('chrome-bar')) {
     const bg = page.theme || null
     const tone = bg ? (isLightColor(bg) ? 'light' : 'dark') : browserTone
-    parts.push(`<div class="browser chrome-bar ${tone}" style="top:${L.status}px;height:${d.chromeBar + 1}px;${bg ? `background:${bg};` : ''}left:${L.left}px">
+    parts.push(`<div class="browser chrome-bar ${tone}" id="chromeBar" style="top:${L.status}px;height:${d.chromeBar + 1}px;${bg ? `background:${bg};` : ''}left:${L.left}px">
       <div class="field">${ICON.info}<span>${host}</span></div><div class="tabs">1</div>${ICON.dots}</div>`)
   }
   const stripBg = pageBg || sysBg
@@ -633,14 +733,250 @@ function buildScreen() {
   }
   parts.push(`<div class="glare" style="border-radius:${d.radius}px"></div>`)
   $('chrome').innerHTML = parts.join('')
-
-  $('device').dataset.viewport = L.frame.width + '×' + L.frame.height
+  applyLayout(L)
   return L
 }
+
+// Places the app and sizes the browser's bars for the current layout. Kept
+// apart from buildScreen so bars and keyboard can animate without a rebuild.
+function applyLayout(L = screenLayout()) {
+  const d = DEVICES[state.device]
+  Object.assign(frame.style, {
+    left: L.frame.left + 'px', top: L.frame.top + 'px', width: L.frame.width + 'px', height: L.frame.height + 'px',
+    transform: kb.pan ? `translateY(${-kb.pan}px)` : '',
+  })
+  const bottom = $('safariBottom')
+  if (bottom) { bottom.style.height = L.bottom + 1 + 'px'; bottom.classList.toggle('min', state.barsMin) }
+  const top = $('safariTop')
+  if (top) top.style.height = state.barsMin ? '0px' : L.top + 1 + 'px'
+  const bar = $('chromeBar')
+  if (bar) bar.style.height = state.barsMin ? '0px' : d.chromeBar + 1 + 'px'
+  $('device').dataset.viewport = L.frame.width + '×' + L.frame.height
+}
+
+// Animates the next layout change: bars tucking away, the keyboard resizing.
+let animTimer
+function animate() {
+  $('screen').classList.add('anim')
+  clearTimeout(animTimer)
+  animTimer = setTimeout(() => $('screen').classList.remove('anim'), 320)
+}
+
+// Safari and Chrome tuck their bars away as the page scrolls down and bring
+// them back on the way up; the shim reports the scrolling.
+function setBars(min) {
+  if (state.barsMin === min || state.mode !== 'browser') return
+  state.barsMin = min
+  animate()
+  applyLayout()
+  fit()
+  sendConfig()
+}
+
+// The on-screen keyboard. The shim says when a text field gets focus and what
+// kind it is; keys go back to the shim, which types them into the field.
+const kb = { open: false, kind: 'text', hint: '', multiline: false, layer: 'abc', shift: false, word: '', pan: 0 }
+const KB_ICON = {
+  shift: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3.5 3.5 12H8v8h8v-8h4.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  back: '<svg width="25" height="19" viewBox="0 0 26 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2H23a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8.5L1.5 10Z"/><path d="m12 6.5 7 7m0-7-7 7"/></svg>',
+  enter: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 5v6a3 3 0 0 1-3 3H5"/><path d="m9 10-4 4 4 4"/></svg>',
+  search: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>',
+  send: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V14l9-2-9-2V3.5L22 12Z"/></svg>',
+  next: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg>',
+  done: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>',
+  emoji: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14.5a4.5 4.5 0 0 0 8 0M9 9.5h.01M15 9.5h.01"/></svg>',
+  emojiSmall: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14.5a4.5 4.5 0 0 0 8 0M9 9.5h.01M15 9.5h.01"/></svg>',
+  mic: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+  up: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>',
+  down: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  keyboard: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M6 9.5h.01M9.5 9.5h.01M13 9.5h.01M16.5 9.5h.01M8 15h8"/></svg>',
+  grid: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>',
+  gear: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>',
+}
+const PAD_KINDS = ['numeric', 'decimal', 'tel']
+const isPad = () => PAD_KINDS.includes(kb.kind) || (kb.kind === 'number' && DEVICES[state.device].os === 'android')
+
+function kbHeight(d) {
+  const land = state.landscape
+  const strip = land ? d.kb.barLand : d.kb.bar
+  const form = d.os === 'ios' ? (land ? 36 : 44) : 0
+  return (land ? d.kb.hLand : d.kb.h) - (isPad() ? strip : 0) + form
+}
+
+const escapeHtml = text => text.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const keyHtml = (k, label = escapeHtml(k), flex = 1, cls = '') =>
+  `<div class="k ${cls}" data-k="${escapeHtml(k)}" style="flex-grow:${flex}" role="button" aria-label="${escapeHtml(k)}">${label}</div>`
+const gapKey = flex => keyHtml('', '', flex, 'gap')
+
+// The return key: iOS names it, Android draws an icon. A text area always
+// gets a plain return.
+function enterKey(ios) {
+  const hint = kb.multiline ? '' : kb.hint || (kb.kind === 'search' ? 'search' : '')
+  if (ios) {
+    const label = { go: 'go', search: 'search', send: 'send', next: 'next', done: 'done' }[hint] || 'return'
+    return keyHtml('enter', label, 2.4, label === 'return' ? 'mod' : 'mod tint')
+  }
+  const icon = { search: KB_ICON.search, send: KB_ICON.send, next: KB_ICON.next, go: KB_ICON.next, done: KB_ICON.done }[hint] || KB_ICON.enter
+  return keyHtml('enter', icon, 1.5, 'mod tint')
+}
+
+function letterRows(ios) {
+  const row = (keys, cls = '', flex = 1) => keys.map(k => keyHtml(k, escapeHtml(k), flex, cls)).join('')
+  const backKey = keyHtml('back', KB_ICON.back, 1.35, 'mod')
+  const d = DEVICES[state.device]
+  const email = kb.kind === 'email', url = kb.kind === 'url'
+  let rows
+  if (kb.layer === 'abc') {
+    rows = [
+      row([...'qwertyuiop'], 'letter'),
+      gapKey(0.5) + row([...'asdfghjkl'], 'letter') + gapKey(0.5),
+      keyHtml('shift', KB_ICON.shift, 1.35, 'mod') + gapKey(0.2) + row([...'zxcvbnm'], 'letter') + gapKey(0.2) + backKey,
+    ]
+  } else {
+    const sym = kb.layer === 'sym'
+    const [r1, r2, r3] = ios
+      ? (sym ? [[...'[]{}#%^*+='], ['_', '\\', '|', '~', '<', '>', '€', '£', '¥', '•'], ['.', ',', '?', '!', "'"]]
+        : [[...'1234567890'], ['-', '/', ':', ';', '(', ')', '$', '&', '@', '"'], ['.', ',', '?', '!', "'"]])
+      : (sym ? [[...'~`|•√π÷×¶∆'], ['£', '¢', '€', '¥', '^', '°', '=', '{', '}', '\\'], ['%', '©', '®', '™', '✓', '[', ']']]
+        : [[...'1234567890'], ['@', '#', '$', '_', '&', '-', '+', '(', ')', '/'], ['*', '"', "'", ':', ';', '!', '?']])
+    const swap = sym
+      ? keyHtml('layer:123', ios ? '123' : '?123', 1.35, 'mod')
+      : keyHtml('layer:sym', ios ? '#+=' : '=\\&lt;', 1.35, 'mod')
+    rows = [row(r1), row(r2), swap + gapKey(0.3) + row(r3, '', ios ? 1.4 : 1) + gapKey(0.3) + backKey]
+  }
+  const layerKey = kb.layer === 'abc'
+    ? keyHtml('layer:123', ios ? '123' : '?123', ios ? 2.4 : 1.5, 'mod')
+    : keyHtml('layer:abc', 'ABC', ios ? 2.4 : 1.5, 'mod')
+  let bottom
+  if (ios) {
+    const extra = email ? row(['@', '.'], '', 1.2) : url ? row(['/', '.'], '', 1.2) : ''
+    bottom = layerKey + (d.classic ? keyHtml('emoji', KB_ICON.emojiSmall, 1.2, 'mod') : '')
+      + keyHtml('space', 'space', extra ? 3.6 : 6) + extra + enterKey(true)
+  } else {
+    const near = email ? '@' : url ? '/' : ','
+    bottom = layerKey + keyHtml(near, near, 1, 'mod') + keyHtml('emoji', KB_ICON.emojiSmall, 1, 'mod')
+      + keyHtml('space', '', 4.4) + keyHtml('.', '.', 1, 'mod') + enterKey(false)
+  }
+  return [...rows, bottom]
+}
+
+function padRows(ios) {
+  const sub = { 2: 'ABC', 3: 'DEF', 4: 'GHI', 5: 'JKL', 6: 'MNO', 7: 'PQRS', 8: 'TUV', 9: 'WXYZ' }
+  const digit = n => keyHtml(String(n), ios ? `${n}<small>${sub[n] ?? '&nbsp;'}</small>` : String(n))
+  const corner = kb.kind === 'decimal' ? keyHtml('.') : kb.kind === 'tel' ? keyHtml('+', '+ * #') : gapKey(1)
+  if (ios) {
+    return [[1, 2, 3], [4, 5, 6], [7, 8, 9]].map(r => r.map(digit).join(''))
+      .concat(corner + digit(0) + keyHtml('back', KB_ICON.back, 1, 'gap-free mod'))
+  }
+  return [
+    [1, 2, 3].map(digit).join('') + keyHtml('-', '-', 1, 'mod'),
+    [4, 5, 6].map(digit).join('') + keyHtml('space', '␣', 1, 'mod'),
+    [7, 8, 9].map(digit).join('') + keyHtml('back', KB_ICON.back, 1, 'mod'),
+    keyHtml(',', ',', 1, 'mod') + digit(0) + keyHtml('.', '.', 1, 'mod') + enterKey(false),
+  ]
+}
+
+function suggestHtml(ios) {
+  if (ios) return `<span></span><span>${kb.word ? `“${escapeHtml(kb.word)}”` : ''}</span><span></span>`
+  if (kb.word) return `<span style="flex:1;justify-content:center;color:var(--kb-text);font-weight:500">${escapeHtml(kb.word)}</span>`
+  return `<span>${KB_ICON.grid}</span><span>${KB_ICON.emojiSmall}</span><span style="font:600 12px/20px system-ui">GIF</span><span>${KB_ICON.gear}</span><span>${KB_ICON.mic.replace(/24/g, '20')}</span>`
+}
+
+function renderKeyboard() {
+  const el = $('kb')
+  const d = DEVICES[state.device]
+  const ios = d.os === 'ios', land = state.landscape
+  el.className = `kb ${ios ? 'ios' : 'android'} ${prefersDark() ? 'dark' : 'light'}${kb.open ? ' open' : ''}${kb.shift ? ' shift' : ''}`
+  if (!kb.open) return
+  const height = kbHeight(d)
+  const form = ios ? (land ? 36 : 44) : 0
+  const strip = isPad() ? 0 : land ? d.kb.barLand : d.kb.bar
+  // Below the keys: iOS keeps its emoji and dictation buttons there on Face ID
+  // phones; Android draws its hide and switch-keyboard buttons.
+  const foot = ios ? (d.classic ? 0 : land ? d.homeLand : 76) : land ? 40 : 48
+  const side = land && ios && !d.classic ? d.sideLand - 14 : land ? 24 : 0
+  const rows = isPad() ? padRows(ios) : letterRows(ios)
+  el.style.height = height + 'px'
+  const footHtml = !foot ? ''
+    : ios ? `<div class="foot" style="height:${foot}px">${isPad() || land ? '' : `<span data-k="emoji">${KB_ICON.emoji}</span><span data-k="mic">${KB_ICON.mic}</span>`}</div>`
+    : `<div class="foot" style="height:${foot}px"><span data-k="hide" aria-label="Hide keyboard">${KB_ICON.down}</span><span>${KB_ICON.keyboard}</span></div>`
+  el.innerHTML = (form ? `<div class="acc" style="height:${form}px;padding:0 ${side + 16}px"><div class="arrows"><span data-k="prev" aria-label="Previous field">${KB_ICON.up}</span><span data-k="next" aria-label="Next field">${KB_ICON.down}</span></div><span data-k="hide">Done</span></div>` : '')
+    + (strip ? `<div class="suggest" id="kbSuggest" style="height:${strip}px;padding:0 ${side}px">${suggestHtml(ios)}</div>` : '')
+    + `<div class="rows${isPad() ? ' pad' : ''}" style="height:${height - form - strip - foot}px;padding:0 ${side + 3}px">${rows.map(r => `<div class="row">${r}</div>`).join('')}</div>`
+    + footHtml
+}
+
+function openKeyboard(info) {
+  const ios = DEVICES[state.device].os === 'ios'
+  const wasOpen = kb.open
+  Object.assign(kb, { open: true, kind: info.kind || 'text', hint: info.hint || '', multiline: Boolean(info.multiline), shift: false, word: '' })
+  kb.layer = kb.kind === 'number' && ios ? '123' : 'abc'
+  renderKeyboard()
+  if (!wasOpen) animate()
+  applyLayout()
+  fit()
+  sendConfig()
+}
+
+// quiet: the app is going away anyway, so it isn't told.
+function closeKeyboard(quiet) {
+  if (!kb.open) return
+  kb.open = false
+  kb.pan = 0
+  renderKeyboard()
+  animate()
+  applyLayout()
+  fit()
+  if (!quiet) sendConfig()
+}
+
+function sendToApp(message) {
+  try { frame.contentWindow.postMessage({ phonePreview: message.type, ...message }, '*') } catch {}
+}
+
+function press(k) {
+  const ios = DEVICES[state.device].os === 'ios'
+  if (!k || k === 'emoji' || k === 'mic') return
+  if (k === 'shift') { kb.shift = !kb.shift; $('kb').classList.toggle('shift', kb.shift); return }
+  if (k.startsWith('layer:')) { kb.layer = k.slice(6); kb.shift = false; renderKeyboard(); return }
+  if (k === 'hide') { sendToApp({ type: 'blur' }); return }
+  if (k === 'prev' || k === 'next') { sendToApp({ type: 'move', dir: k }); return }
+  if (k === 'back') {
+    sendToApp({ type: 'key', key: 'Backspace' })
+    kb.word = kb.word.slice(0, -1)
+  } else if (k === 'enter') {
+    sendToApp({ type: 'key', key: 'Enter' })
+    kb.word = ''
+  } else if (k === 'space') {
+    sendToApp({ type: 'key', key: ' ' })
+    kb.word = ''
+    // iOS goes back to letters after a space typed on the number layer.
+    if (ios && kb.layer !== 'abc') { kb.layer = 'abc'; renderKeyboard() }
+  } else {
+    const ch = kb.shift ? k.toUpperCase() : k
+    sendToApp({ type: 'key', key: ch })
+    kb.word = /^[\p{L}\p{N}'’-]$/u.test(ch) ? kb.word + ch : ''
+    if (kb.shift) { kb.shift = false; $('kb').classList.remove('shift') }
+  }
+  const suggest = $('kbSuggest')
+  if (suggest) suggest.innerHTML = suggestHtml(ios)
+}
+
+// Keys act on press, and pressing one must not take focus from the app's field.
+for (const type of ['mousedown', 'touchstart']) $('kb').addEventListener(type, e => e.preventDefault(), { passive: false })
+$('kb').addEventListener('pointerdown', e => {
+  e.preventDefault()
+  const key = e.target.closest('[data-k]')
+  if (!key) return
+  key.classList.add('down')
+  setTimeout(() => key.classList.remove('down'), 110)
+  press(key.dataset.k)
+})
 
 function build() {
   buildBody()
   buildScreen()
+  renderKeyboard()
   renderControls()
   fit()
 }
@@ -651,8 +987,16 @@ function sendConfig() {
 }
 
 // Points the proxy at the app and loads it on this origin.
+// A fresh page starts with the bars shown and no keyboard.
+function resetPhone() {
+  state.barsMin = false
+  closeKeyboard(true)
+  applyLayout()
+}
+
 async function navigate() {
   showLoading('Loading…')
+  resetPhone()
   let target
   try { target = new URL(state.url) } catch { showLoading('That address is not valid.', true); return }
   try {
@@ -683,6 +1027,10 @@ function showLoading(html, isStuck) {
 frame.addEventListener('load', () => {
   clearTimeout(loadTimer)
   $('loading').hidden = true
+  // A reload keeps the identity sent with the last navigation; bring the
+  // page up to date with what changed since (rotation, bars, keyboard).
+  if (state.barsMin || kb.open) { resetPhone(); fit() }
+  sendConfig()
 })
 
 // Safari's and Chrome's own buttons drive the app's history.
@@ -693,6 +1041,7 @@ $('chrome').addEventListener('click', e => {
     if (act === 'back') frame.contentWindow.history.back()
     else if (act === 'forward') frame.contentWindow.history.forward()
     else if (act === 'reload') frame.contentWindow.location.reload()
+    else if (act === 'expand') setBars(false)
   } catch { navigate() }
 })
 
@@ -701,13 +1050,22 @@ window.addEventListener('message', e => {
   const data = e.data
   if (data.phonePreview === 'page') {
     const before = JSON.stringify(page)
-    page = { isCover: data.isCover, theme: data.theme, barStyle: data.barStyle, background: data.background }
+    page = { isCover: data.isCover, theme: data.theme, barStyle: data.barStyle, background: data.background, widget: data.widget }
     // Keep the address in step with where the app went.
     try {
       const now = new URL(data.path, state.url).href
       if (now !== state.url) { state.url = now; $('url').value = now; persist() }
     } catch {}
     if (JSON.stringify(page) !== before) { buildScreen(); fit(); sendConfig() }
+  } else if (data.phonePreview === 'keyboard') {
+    if (data.open && $('kbOn').checked) openKeyboard(data)
+    else closeKeyboard()
+  } else if (data.phonePreview === 'pan') {
+    // iOS slides the whole page up when scrolling can't bring the field above the keyboard.
+    kb.pan = data.y
+    applyLayout()
+  } else if (data.phonePreview === 'bars') {
+    setBars(data.min)
   } else if (data.phonePreview === 'zoom') {
     toast(`On an iPhone this field would zoom the page in: its text is ${Math.round(data.size * 10) / 10}px, under 16px.`, 4200)
   }
@@ -830,7 +1188,7 @@ $('urlForm').onsubmit = e => {
   state.url = normalize($('url').value)
   $('url').value = state.url
   $('url').blur()
-  page = { isCover: false, theme: null, barStyle: null, background: null }
+  page = { isCover: false, theme: null, barStyle: null, background: null, widget: null }
   persist()
   buildScreen()
   navigate()
@@ -843,7 +1201,7 @@ $('zoomOut').onclick = () => zoomBy(-1)
 $('zoomFit').onclick = () => { state.zoom = 'fit'; persist(); fit() }
 $('external').onclick = () => window.open(state.url, '_blank', 'noopener')
 addEventListener('resize', fit)
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => buildScreen())
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { buildScreen(); renderKeyboard() })
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return
   const k = e.key.toLowerCase()
@@ -863,6 +1221,8 @@ setInterval(() => { for (const el of document.querySelectorAll('[data-clock]')) 
 
 // After Claude edits a file the mod posts /reload; apps without hot reload
 // need the page reloaded to show the change.
+$('kbOn').checked = store.get('keyboard', true)
+$('kbOn').onchange = () => { store.set('keyboard', $('kbOn').checked); if (!$('kbOn').checked) closeKeyboard() }
 $('auto').checked = store.get('reload-on-edit', true)
 $('auto').onchange = () => store.set('reload-on-edit', $('auto').checked)
 try {
