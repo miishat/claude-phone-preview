@@ -65,7 +65,8 @@
     position: relative; z-index: 5;
   }
   /* The top bar is one row: the address takes whatever the controls leave. */
-  .top-bar { width: min(860px, calc(100% - 24px)); flex-wrap: nowrap; justify-content: flex-start; }
+  /* As wide as the bottom bar (set from script); the address takes the slack. */
+  .top-bar { width: min(560px, calc(100% - 24px)); flex-wrap: nowrap; justify-content: flex-start; }
   .top-bar .url { flex: 1 1 auto; max-width: none; min-width: 120px; }
   .top-bar .group { flex: none; }
   .top-bar .label, .top-bar .switch .text { display: none; }
@@ -1677,6 +1678,14 @@ $('zoomOut').onclick = () => zoomBy(-1)
 $('zoomFit').onclick = () => { state.zoom = 'fit'; persist(); fit() }
 $('external').onclick = () => window.open(state.url, '_blank', 'noopener')
 addEventListener('resize', fit)
+// The top bar matches the bottom bar's width, so the two frame the phone
+// evenly; the address field grows or shrinks to make up the difference.
+new ResizeObserver(() => {
+  const top = document.querySelector('.top-bar')
+  // Never so narrow that the address gets under 120px.
+  const least = top.querySelector('.group').offsetWidth + 120 + 20
+  top.style.width = Math.min(document.body.clientWidth - 24, Math.max(least, document.querySelector('.dock-bar').getBoundingClientRect().width)) + 'px'
+}).observe(document.querySelector('.dock-bar'))
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { buildScreen(); renderKeyboard() })
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement || e.target.closest?.('.menu') || e.metaKey || e.ctrlKey || e.altKey) return
