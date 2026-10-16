@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phone preview</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #eceae4;
+    --bg-glow: #ffffff;
+    --dot: rgba(40, 38, 32, 0.09);
+    --panel: rgba(255, 255, 255, 0.78);
+    --panel-border: rgba(30, 28, 24, 0.09);
+    --text: #23221f;
+    --muted: #7a776f;
+    --hover: rgba(30, 28, 24, 0.06);
+    --active: #23221f;
+    --on-active: #ffffff;
+    --accent: #2f6fdb;
+    --floor: rgba(30, 26, 18, 0.22);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141413;
+      --bg-glow: #23221f;
+      --dot: rgba(255, 255, 255, 0.05);
+      --panel: rgba(38, 37, 34, 0.78);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text: #ecebe6;
+      --muted: #9b988f;
+      --hover: rgba(255, 255, 255, 0.07);
+      --active: #ecebe6;
+      --on-active: #161614;
+      --accent: #6b9cff;
+      --floor: rgba(0, 0, 0, 0.55);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 42%, var(--bg-glow) 0%, transparent 70%),
+      radial-gradient(var(--dot) 1px, transparent 1.2px) 0 0 / 18px 18px,
+      var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  svg { display: block; }
+
+  /* Toolbar */
+  .toolbar {
+    margin: 12px auto 0; padding: 6px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center;
+    max-width: calc(100% - 24px);
+    background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px;
+    backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px -12px rgba(0,0,0,0.18);
+    position: relative; z-index: 5;
+  }
+  .group { display: flex; align-items: center; gap: 2px; }
+  .sep { width: 1px; height: 22px; background: var(--panel-border); margin: 0 2px; }
+  .url {
+    display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 4px 0 10px; border-radius: 10px;
+    background: var(--hover); min-width: 220px; flex: 1 1 260px; max-width: 380px;
+  }
+  .url svg { color: var(--muted); flex: none; }
+  .url input { border: 0; outline: 0; background: transparent; width: 100%; min-width: 0; font-size: 13px; }
+  .url:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+  .icon-btn {
+    height: 34px; min-width: 34px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; color: var(--text);
+    transition: background .15s;
+  }
+  .icon-btn:hover { background: var(--hover); }
+  .icon-btn:disabled { opacity: .35; cursor: default; background: transparent; }
+  .icon-btn:focus-visible, .seg button:focus-visible, .swatch:focus-visible, .switch:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .icon-btn .label { font-size: 12px; color: var(--muted); }
+  .seg { display: flex; padding: 3px; gap: 2px; border-radius: 11px; background: var(--hover); }
+  .seg button {
+    border: 0; background: transparent; height: 28px; padding: 0 10px; border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-checked="true"] { background: var(--active); color: var(--on-active); }
+  .swatches { display: flex; gap: 5px; padding: 0 6px; }
+  .swatch {
+    width: 18px; height: 18px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+  }
+  .swatch[aria-checked="true"] { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18), 0 0 0 2px var(--panel), 0 0 0 3.5px var(--text); }
+  .switch { display: inline-flex; align-items: center; gap: 8px; padding: 0 8px; height: 34px; border-radius: 10px; cursor: pointer; color: var(--muted); font-size: 12px; }
+  .switch:hover { background: var(--hover); }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .track { width: 28px; height: 16px; border-radius: 8px; background: rgba(128,128,128,0.35); position: relative; transition: background .2s; }
+  .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .2s; }
+  .switch input:checked ~ .track { background: #34c759; }
+  .switch input:checked ~ .track::after { transform: translateX(12px); }
+  .switch input:checked ~ .text, .switch input:checked ~ svg { color: var(--text); }
+  .zoom { display: flex; align-items: center; border-radius: 10px; background: var(--hover); }
+  .zoom .icon-btn { height: 30px; min-width: 30px; padding: 0 6px; border-radius: 8px; }
+  .zoom .icon-btn:hover { background: var(--hover); }
+  .zoom-value { min-width: 50px !important; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  /* Stage */
+  .stage { flex: 1; position: relative; min-height: 0; }
+  .holder { position: absolute; left: 50%; top: 50%; transform-origin: center center; transition: transform .3s ease; }
+  .floor {
+    position: absolute; left: 8%; right: 8%; bottom: -26px; height: 40px; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--floor), transparent); filter: blur(6px);
+  }
+  .dock { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 12px 12px; }
+  .dock .toolbar { margin: 0; }
+  .meta {
+    text-align: center; color: var(--muted); font-size: 12px;
+    display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;
+  }
+  .meta b { color: var(--text); font-weight: 500; }
+  .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .6; }
+
+  /* Device */
+  .device { position: relative; }
+  .rim { position: absolute; inset: 0; }
+  .btn-side { position: absolute; width: 3.5px; border-radius: 2px; }
+  .face { position: absolute; overflow: hidden; }
+  /* clip-path clips the app's own compositing layer at the rounded corners,
+     where overflow and border-radius alone can leave a sliver at odd zooms. */
+  .screen { position: absolute; overflow: hidden; background: #000; isolation: isolate; }
+  .screen iframe { position: absolute; border: 0; background: transparent; display: block; color-scheme: normal; }
+  .chrome > * { position: absolute; }
+  .status {
+    left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; z-index: 2;
+    font: 600 15px/1 -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif; pointer-events: none;
+  }
+  .status.android { font: 500 13px/1 "Google Sans", Roboto, "Segoe UI", system-ui, sans-serif; }
+  .status .icons { display: flex; align-items: center; gap: 5px; }
+  .island { left: 50%; transform: translateX(-50%); background: #000; border-radius: 20px; z-index: 6; }
+  .hole { left: 50%; transform: translateX(-50%); background: #050505; border-radius: 50%; z-index: 6; box-shadow: inset 0 0 0 2px #1c1c1c; }
+  .homebar { left: 50%; transform: translateX(-50%); border-radius: 3px; z-index: 6; pointer-events: none; }
+  .glare { inset: 0; pointer-events: none; z-index: 7; background: linear-gradient(125deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 32%); }
+  .earpiece { position: absolute; left: 50%; transform: translateX(-50%); height: 6px; border-radius: 3px; }
+  .camera { position: absolute; border-radius: 50%; }
+  .homebtn { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 50%; }
+
+  /* The phone's browser: Safari's bottom toolbar, Chrome's top bar. */
+  .browser { z-index: 3; font: 400 15px/1 -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif; }
+  .browser.light { --b-bg: rgba(248,248,248,.96); --b-pill: #e4e4e9; --b-text: #111; --b-muted: #6e6e73; --b-tint: #007aff; --b-line: rgba(0,0,0,.12); }
+  .browser.dark { --b-bg: rgba(28,28,30,.96); --b-pill: #3a3a3c; --b-text: #f2f2f7; --b-muted: #9a9aa0; --b-tint: #0a84ff; --b-line: rgba(255,255,255,.1); }
+  .browser { background: var(--b-bg); color: var(--b-text); }
+  .safari-bottom { left: 0; right: 0; bottom: 0; border-top: .5px solid var(--b-line); display: flex; flex-direction: column; }
+  .pill {
+    margin: 8px 12px 0; height: 44px; border-radius: 13px; background: var(--b-pill); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 12px; font-size: 16px;
+  }
+  .pill .host { display: flex; align-items: center; gap: 5px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .pill .aa { font-weight: 600; font-size: 15px; letter-spacing: -0.5px; }
+  .pill button, .tools button { border: 0; background: transparent; padding: 0; color: inherit; cursor: pointer; display: flex; }
+  .tools { display: flex; justify-content: space-around; align-items: center; height: 44px; color: var(--b-tint); }
+  .tools button:disabled { opacity: .3; cursor: default; }
+  .safari-top { left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: center; border-bottom: .5px solid var(--b-line); }
+  .safari-top .pill { margin: 0; height: 32px; width: 46%; justify-content: center; gap: 10px; font-size: 14px; }
+  .chrome-bar { left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 10px; font-family: "Google Sans", Roboto, "Segoe UI", system-ui, sans-serif; }
+  .chrome-bar .field {
+    flex: 1; height: 40px; border-radius: 20px; background: var(--b-pill); display: flex; align-items: center; gap: 10px;
+    padding: 0 14px; font-size: 15px; overflow: hidden; white-space: nowrap;
+  }
+  .chrome-bar .tabs { width: 20px; height: 20px; border: 2px solid currentColor; border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .loading {
+    position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center;
+    background: #fff; color: #6b6963; font-size: 13px; text-align: center; padding: 24px; transition: opacity .25s;
+  }
+  .loading[hidden] { display: flex; opacity: 0; pointer-events: none; }
+  .spinner { width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid #ddd; border-top-color: #6b6963; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-color-scheme: dark) {
+    .screen .loading { background: #000; color: #9b988f; }
+    .screen .spinner { border-color: #333; border-top-color: #9b988f; }
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 44px; transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+    background: var(--active); color: var(--on-active); padding: 8px 14px; border-radius: 999px; font-size: 12px;
+    transition: opacity .2s, transform .2s; z-index: 10; max-width: calc(100% - 32px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (max-width: 720px) {
+    .url { min-width: 140px; }
+    .seg button { padding: 0 8px; }
+  }
+  @media (max-width: 460px) { .label { display: none; } }
+  @media (max-width: 560px) { #devices button span { display: none; } #devices button { padding: 0 10px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation-duration: 2s !important; } }
+</style>
+</head>
+<body>
+<header class="toolbar" role="toolbar" aria-label="Phone preview controls">
+  <form class="url" id="urlForm" title="App address">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/></svg>
+    <input id="url" spellcheck="false" autocomplete="off" placeholder="localhost:5173" aria-label="App address">
+    <button class="icon-btn" type="button" id="reload" title="Reload (R)" aria-label="Reload">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+    </button>
+  </form>
+  <div class="group">
+    <button class="icon-btn" type="button" id="rotate" title="Rotate the phone (L)">
+      <span id="rotateIcon" aria-hidden="true"></span>
+      <span class="label" id="rotateLabel">Landscape</span>
+    </button>
+    <span class="sep"></span>
+    <div class="zoom" role="group" aria-label="Zoom">
+      <button class="icon-btn" type="button" id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h12"/></svg>
+      </button>
+      <button class="icon-btn zoom-value" type="button" id="zoomFit" title="Fit to window (0)" aria-label="Zoom level, press to fit"><span id="zoomLabel">Fit</span></button>
+      <button class="icon-btn" type="button" id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg>
+      </button>
+    </div>
+    <span class="sep"></span>
+    <button class="icon-btn" type="button" id="external" title="Open the app in a new tab" aria-label="Open the app in a new tab">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+    </button>
+    <label class="switch" title="When on, the app reloads by itself after Claude edits a file">
+      <input type="checkbox" id="auto">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+      <span class="text">Reload on edit</span>
+      <span class="track" aria-hidden="true"></span>
+    </label>
+  </div>
+</header>
+
+<main class="stage" id="stage">
+  <div class="holder" id="holder">
+    <div class="floor"></div>
+    <div class="device" id="device">
+      <div id="buttons"></div>
+      <div class="rim" id="rim"></div>
+      <div class="face" id="face">
+        <div id="deco"></div>
+        <div class="screen" id="screen">
+          <div class="chrome" id="chrome"></div>
+          <div class="loading" id="loading"><div class="spinner"></div><div>Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="dock">
+  <div class="toolbar dock-bar">
+    <div class="seg" id="devices" role="radiogroup" aria-label="Device"></div>
+    <span class="sep"></span>
+    <div class="seg" id="modes" role="radiogroup" aria-label="How the app is opened"></div>
+    <span class="sep"></span>
+    <div class="swatches" id="swatches" role="radiogroup" aria-label="Frame colour"></div>
+  </div>
+  <div class="meta" id="meta" aria-live="polite"></div>
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const IOS_SAFARI_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1'
+// A web app opened from the Home Screen leaves out Version/ and Safari/.
+const IOS_APP_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+// Chrome's reduced user agent: every Android phone reports "Android 10; K".
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36'
+
+// Each device in CSS px, portrait, as its maker draws it: the screen, its
+// corner radius, bezel and rim, the camera, and the system's own bars.
+// status: the status bar; home: the home indicator's safe area; safari: the
+// height Safari's toolbar takes (with the home area), so the page gets what
+// Safari leaves; chromeBar: Chrome's address bar; nav: Android's gesture bar.
+const DEVICES = {
+  iphone15: {
+    label: 'iPhone 15', os: 'ios', screen: [393, 852], dpr: 3, radius: 55, bezel: 11, rim: 4.5,
+    status: 59, home: 34, homeLand: 21, sideLand: 59, safari: { bottom: 134, landTop: 44 },
+    island: { w: 125, h: 36, top: 11 }, homebar: { w: 140, h: 5, bottom: 8 },
+    buttons: { left: [[120, 32], [178, 60], [252, 60]], right: [[214, 96]] },
+    colors: { Black: '#3b3c3e', Blue: '#d4dee3', Green: '#cfdccb', Yellow: '#ede4c6', Pink: '#ecd0d3' },
+  },
+  iphonese: {
+    label: 'iPhone SE', os: 'ios', classic: true, screen: [375, 667], dpr: 2, radius: 0, rim: 3.5,
+    sideBezel: 22, topBezel: 104, bottomBezel: 104, bodyRadius: 58,
+    status: 20, home: 0, homeLand: 0, sideLand: 0, safari: { bottom: 99, landTop: 44 },
+    buttons: { left: [[110, 30], [168, 56], [236, 56]], right: [[168, 72]] },
+    colors: { Midnight: '#262b33', Starlight: '#f3ede6', Red: '#b5172f' },
+  },
+  pixel8: {
+    label: 'Pixel 8', os: 'android', model: 'Pixel 8', screen: [412, 915], dpr: 2.625, radius: 46, bezel: 13, rim: 5,
+    status: 36, statusLand: 28, nav: 24, chromeBar: 56, cutoutLand: 36,
+    hole: { d: 18, top: 13 }, homebar: { w: 108, h: 4, bottom: 9 },
+    buttons: { right: [[208, 64], [300, 120]] },
+    colors: { Obsidian: '#2c2d30', Hazel: '#8e9488', Rose: '#e9cfc7' },
+  },
+  galaxys24: {
+    label: 'Galaxy S24', os: 'android', model: 'SM-S921B', screen: [360, 780], dpr: 3, radius: 34, bezel: 9, rim: 4,
+    status: 32, statusLand: 26, nav: 24, chromeBar: 56, cutoutLand: 30,
+    hole: { d: 14, top: 11 }, homebar: { w: 96, h: 4, bottom: 8 },
+    buttons: { right: [[176, 96], [296, 52]] },
+    colors: { Onyx: '#2a2b2e', Marble: '#cfcfcc', Violet: '#7d7aa3', Amber: '#efe2b3' },
+  },
+}
+const ALIASES = { galaxys: 'galaxys24' }
+const GLYPHS = {
+  ios: '<svg width="11" height="15" viewBox="0 0 11 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="0.7" y="0.7" width="9.6" height="13.6" rx="2.6"/><rect x="3.5" y="2.2" width="4" height="1.2" rx=".6" fill="currentColor" stroke="none"/></svg>',
+  classic: '<svg width="11" height="15" viewBox="0 0 11 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="0.7" y="0.7" width="9.6" height="13.6" rx="2"/><circle cx="5.5" cy="12.2" r=".9" fill="currentColor" stroke="none"/></svg>',
+  android: '<svg width="11" height="15" viewBox="0 0 11 15" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="0.7" y="0.7" width="9.6" height="13.6" rx="2.2"/><circle cx="5.5" cy="2.8" r=".8" fill="currentColor" stroke="none"/></svg>',
+}
+const ICON = {
+  back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>',
+  forward: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>',
+  share: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M7 10H5.5A1.5 1.5 0 0 0 4 11.5v8A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H17"/></svg>',
+  book: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14c-3-.5-6 0-8 1.5Z"/><path d="M12 6v14"/></svg>',
+  tabs: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="7" y="7" width="13" height="13" rx="2.5"/><path d="M4 16V6.5A2.5 2.5 0 0 1 6.5 4H16"/></svg>',
+  reload: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>',
+  info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
+  dots: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+}
+
+const $ = id => document.getElementById(id)
+const store = {
+  get(key, fallback) { try { return JSON.parse(localStorage.getItem('phone-preview:' + key)) ?? fallback } catch { return fallback } },
+  set(key, value) { try { localStorage.setItem('phone-preview:' + key, JSON.stringify(value)) } catch {} },
+}
+const prefersDark = () => matchMedia('(prefers-color-scheme: dark)').matches
+const q = new URLSearchParams(location.search)
+const askedDevice = ALIASES[q.get('device')] ?? q.get('device')
+const state = {
+  url: q.get('url') || store.get('url', 'http://localhost:5173'),
+  device: DEVICES[askedDevice] ? askedDevice : store.get('device', 'iphone15'),
+  mode: ['browser', 'app'].includes(q.get('mode')) ? q.get('mode') : store.get('mode', 'browser'),
+  landscape: q.has('landscape') ? q.get('landscape') === '1' : false,
+  zoom: (z => (z === 'fit' || (typeof z === 'number' && z >= 25 && z <= 200) ? z : z === 'actual' ? 100 : 'fit'))(store.get('zoom', 'fit')),
+  colors: store.get('colors', {}),
+}
+if (!DEVICES[state.device]) state.device = 'iphone15'
+
+// What the page told us about itself, through the shim.
+let page = { isCover: false, theme: null, barStyle: null, background: null }
+
+const frame = document.createElement('iframe')
+frame.title = 'App preview'
+frame.allow = 'clipboard-read; clipboard-write; geolocation; camera; microphone; fullscreen'
+$('screen').insertBefore(frame, $('chrome'))
+let loadTimer
+
+function persist() {
+  const p = new URLSearchParams({ url: state.url, device: state.device, mode: state.mode })
+  if (state.landscape) p.set('landscape', '1')
+  history.replaceState(null, '', '?' + p)
+  store.set('url', state.url)
+  store.set('device', state.device)
+  store.set('mode', state.mode)
+  store.set('zoom', state.zoom)
+  store.set('colors', state.colors)
+}
+
+function colorOf(d) {
+  const names = Object.keys(d.colors)
+  const name = d.colors[state.colors[state.device]] ? state.colors[state.device] : names[0]
+  return { name, hex: d.colors[name] }
+}
+
+// A colour slightly darker or lighter, for the rim's edges.
+function shade(hex, amount) {
+  const n = parseInt(hex.slice(1), 16)
+  const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v + amount * 255))))
+  return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('')
+}
+const isLight = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 150 }
+
+// Lightness of any CSS colour, for picking black or white text over it.
+function isLightColor(css) {
+  const probe = document.createElement('span')
+  probe.style.color = css
+  document.body.appendChild(probe)
+  const m = getComputedStyle(probe).color.match(/[\d.]+/g) || []
+  probe.remove()
+  const [r, g, b, a = 1] = m.map(Number)
+  if (a < 0.3) return !prefersDark()
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150
+}
+const isOpaque = css => css && !/rgba\([^)]*,\s*0\)|transparent/.test(css)
+
+// Where everything goes on the screen for this device, orientation and mode:
+// the system's bars, the browser's bars, the page's box, and the safe-area
+// insets the page reads from env(safe-area-inset-*).
+function layoutFor(d, land, mode, isCover) {
+  const [sw, sh] = land ? [d.screen[1], d.screen[0]] : d.screen
+  const L = { sw, sh, status: 0, top: 0, bottom: 0, left: 0, right: 0, safe: { top: 0, right: 0, bottom: 0, left: 0 }, bars: [], isStatusOver: false }
+  if (d.os === 'ios') {
+    if (!land) {
+      L.status = d.status
+      if (mode === 'browser') {
+        L.top = d.status
+        L.bottom = d.safari.bottom
+        L.bars.push('safari-bottom')
+      } else {
+        // A Home Screen app sits below an opaque status bar, unless it asks
+        // for apple-mobile-web-app-status-bar-style black-translucent; cover
+        // only lets it run into the home indicator's area.
+        if (page.barStyle === 'black-translucent') {
+          L.isStatusOver = true
+          L.safe.top = d.status
+        } else {
+          L.top = d.status
+        }
+        if (isCover) {
+          L.safe.bottom = d.home
+        } else {
+          L.bottom = d.home
+          L.bars.push('home-strip')
+        }
+      }
+    } else {
+      // iOS hides the status bar in landscape and keeps pages clear of the
+      // island on both sides unless they ask for viewport-fit=cover.
+      const side = isCover ? 0 : d.sideLand
+      L.left = L.right = side
+      if (isCover) L.safe.left = L.safe.right = d.sideLand
+      if (mode === 'browser') {
+        L.top = d.safari.landTop
+        L.bottom = d.homeLand
+        L.bars.push('safari-top')
+        if (d.homeLand) L.bars.push('home-strip')
+      } else if (isCover) {
+        L.safe.bottom = d.homeLand
+      } else {
+        L.bottom = d.homeLand
+        if (d.homeLand) L.bars.push('home-strip')
+      }
+      if (!isCover && side) L.bars.push('side-pads')
+    }
+  } else {
+    const status = land ? d.statusLand : d.status
+    const cutout = land ? d.cutoutLand : 0
+    L.status = status
+    // Chrome and installed apps both keep the page below the status bar;
+    // cover lets it run under the gesture bar and past the camera cutout.
+    if (mode === 'browser') {
+      L.top = status + d.chromeBar
+      L.bars.push('chrome-bar')
+    } else {
+      L.top = status
+    }
+    L.bottom = isCover ? 0 : d.nav
+    L.left = isCover ? 0 : cutout
+    if (isCover) L.safe = { top: 0, right: 0, bottom: d.nav, left: cutout }
+    if (!isCover) L.bars.push('nav-strip')
+    if (!isCover && cutout) L.bars.push('side-pads')
+  }
+  L.frame = { left: L.left, top: L.top, width: sw - L.left - L.right, height: sh - L.top - L.bottom }
+  return L
+}
+
+// What the shim tells the app about the phone.
+function shimConfig() {
+  const d = DEVICES[state.device]
+  const L = layoutFor(d, state.landscape, state.mode, page.isCover)
+  const ios = d.os === 'ios'
+  return {
+    ua: ios ? (state.mode === 'app' ? IOS_APP_UA : IOS_SAFARI_UA) : ANDROID_UA,
+    platform: ios ? 'iPhone' : 'Linux armv81',
+    os: d.os, model: d.model || '', dpr: d.dpr, screen: d.screen,
+    landscape: state.landscape, standalone: state.mode === 'app', safe: L.safe,
+  }
+}
+
+function clock() {
+  const now = new Date()
+  return `${(now.getHours() % 12) || 12}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
+function statusBarHtml(d, L, color, background) {
+  const bars = '<svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".8" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx=".8" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx=".8" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx=".8" fill="currentColor"/></svg>'
+  const wifi = '<svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0L8 11.5Z" fill="currentColor"/><path d="M3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.3 1.3a4.7 4.7 0 0 0-6.6 0L3.4 6.8Z" fill="currentColor"/><path d="M1.2 4.6a9.6 9.6 0 0 1 13.6 0l-1.3 1.3a7.8 7.8 0 0 0-11 0L1.2 4.6Z" fill="currentColor"/></svg>'
+  const battery = d.os === 'android'
+    ? '<svg width="9" height="14" viewBox="0 0 9 14"><rect x="2.5" y="0" width="4" height="2" rx=".5" fill="currentColor"/><rect x="0" y="1.5" width="9" height="12.5" rx="1.6" fill="currentColor"/></svg>'
+    : '<svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="22.5" height="12" rx="3.8" fill="none" stroke="currentColor" opacity=".4"/><rect x="2.2" y="2.2" width="17" height="8.6" rx="2.3" fill="currentColor"/><path d="M24.6 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="currentColor" opacity=".45"/></svg>'
+  const style = `height:${L.status + 1}px;color:${color};background:${background}`
+  if (d.os === 'android') {
+    return `<div class="status android" style="${style};padding:0 18px 0 22px"><span data-clock>${clock()}</span><span class="icons">${wifi}${bars}${battery}</span></div>`
+  }
+  if (d.classic) {
+    return `<div class="status" style="${style};padding:0 6px;font-size:12px"><span class="icons">${bars}${wifi}</span><span data-clock>${clock()}</span><span class="icons">${battery}</span></div>`
+  }
+  const side = Math.round((L.sw - d.island.w) / 2)
+  return `<div class="status" style="${style};padding-top:6px"><span data-clock style="width:${side}px;text-align:center;padding-left:14px">${clock()}</span><span class="icons" style="width:${side}px;justify-content:center;padding-right:10px">${bars}${wifi}${battery}</span></div>`
+}
+
+function hostOf(url, withPort) {
+  try { const u = new URL(url); return withPort ? u.host : u.hostname } catch { return url }
+}
+
+// The device body: buttons, rim and face. The screen inside keeps the app.
+function buildBody() {
+  const d = DEVICES[state.device]
+  const { hex } = colorOf(d)
+  const land = state.landscape
+  const [sw, sh] = land ? [d.screen[1], d.screen[0]] : d.screen
+  let bz = d.classic
+    ? { t: d.topBezel, b: d.bottomBezel, l: d.sideBezel, r: d.sideBezel }
+    : { t: d.bezel, b: d.bezel, l: d.bezel, r: d.bezel }
+  if (land && d.classic) bz = { t: d.sideBezel, b: d.sideBezel, l: d.topBezel, r: d.bottomBezel }
+  const rim = d.rim
+  const W = sw + bz.l + bz.r + rim * 2
+  const H = sh + bz.t + bz.b + rim * 2
+  const bodyRadius = d.classic ? d.bodyRadius : d.radius + d.bezel + rim
+
+  const device = $('device')
+  device.style.width = W + 'px'
+  device.style.height = H + 'px'
+  device.dataset.size = W + 'x' + H
+
+  const btnColor = shade(hex, isLight(hex) ? -0.12 : 0.06)
+  const buttons = []
+  for (const [side, list] of Object.entries(d.buttons)) {
+    for (const [at, len] of list) {
+      const pos = !land
+        ? `top:${at}px;height:${len}px;${side}:-3px`
+        // Turned a quarter clockwise: the left edge becomes the top.
+        : `width:${len}px;height:3.5px;left:${side === 'left' ? W - at - len : at}px;${side === 'left' ? 'top' : 'bottom'}:-3px`
+      buttons.push(`<div class="btn-side" style="${pos};background:linear-gradient(90deg, ${shade(btnColor, -0.08)}, ${btnColor}, ${shade(btnColor, -0.08)})"></div>`)
+    }
+  }
+  $('buttons').innerHTML = buttons.join('')
+
+  const rimEl = $('rim')
+  rimEl.style.borderRadius = bodyRadius + 'px'
+  rimEl.style.background = `linear-gradient(145deg, ${shade(hex, 0.1)}, ${hex} 30%, ${shade(hex, -0.1)} 70%, ${shade(hex, 0.04)})`
+  rimEl.style.boxShadow = `0 30px 60px -20px rgba(0,0,0,.45), 0 12px 24px -12px rgba(0,0,0,.35), inset 0 0 0 1px ${shade(hex, -0.18)}`
+
+  const face = $('face')
+  Object.assign(face.style, { inset: rim + 'px', borderRadius: (bodyRadius - rim) + 'px' })
+  face.style.background = d.classic ? (isLight(hex) ? '#f6f5f2' : '#0b0b0c') : '#050506'
+
+  let deco = ''
+  if (d.classic) {
+    const light = isLight(hex)
+    const trim = light ? '#d7d4ce' : '#1f1f22'
+    const lens = light ? '#2b2b30' : '#151518'
+    const ring = light ? '#cfccc5' : '#2a2a2e'
+    deco = !land
+      ? `<div class="earpiece" style="width:54px;top:${bz.t / 2 - 3}px;background:${trim}"></div>
+         <div class="camera" style="width:11px;height:11px;left:calc(50% - 50px);top:${bz.t / 2 - 6}px;background:${lens};box-shadow:inset 0 0 0 2px ${trim}"></div>
+         <div class="homebtn" style="width:62px;height:62px;bottom:${bz.b / 2 - 31}px;box-shadow:inset 0 0 0 2.5px ${ring}"></div>`
+      : `<div class="earpiece" style="width:6px;height:54px;left:${bz.l / 2 - 3}px;top:calc(50% - 27px);transform:none;background:${trim}"></div>
+         <div class="camera" style="width:11px;height:11px;left:${bz.l / 2 - 6}px;top:calc(50% + 40px);background:${lens};box-shadow:inset 0 0 0 2px ${trim}"></div>
+         <div class="homebtn" style="width:62px;height:62px;left:auto;right:${bz.r / 2 - 31}px;top:calc(50% - 31px);transform:none;box-shadow:inset 0 0 0 2.5px ${ring}"></div>`
+  }
+  $('deco').innerHTML = deco
+
+  Object.assign($('screen').style, {
+    left: bz.l + 'px', top: bz.t + 'px', width: sw + 'px', height: sh + 'px', borderRadius: d.radius + 'px',
+    clipPath: `inset(0 round ${d.radius}px)`,
+  })
+  face.style.clipPath = `inset(0 round ${bodyRadius - rim}px)`
+}
+
+// The screen's contents around the app: status bar, browser bars, strips.
+function buildScreen() {
+  const d = DEVICES[state.device]
+  const land = state.landscape
+  const L = layoutFor(d, land, state.mode, page.isCover)
+  Object.assign(frame.style, {
+    left: L.frame.left + 'px', top: L.frame.top + 'px', width: L.frame.width + 'px', height: L.frame.height + 'px',
+  })
+
+  // The colour behind the system's bars: the page's theme-color as Safari and
+  // Chrome use it, else the page's own background, else the system's.
+  const pageBg = isOpaque(page.background) ? page.background : null
+  const sysBg = prefersDark() ? '#000' : '#fff'
+  const barBg = page.theme || pageBg || sysBg
+  const browserTone = (page.theme ? isLightColor(page.theme) : !prefersDark()) ? 'light' : 'dark'
+  const parts = []
+
+  if (L.status) {
+    // Over the page (black-translucent) the bar is clear with white text; a
+    // Home Screen app that asks for "black" gets a black bar.
+    const bg = L.isStatusOver ? 'transparent'
+      : state.mode === 'app' && d.os === 'ios' && page.barStyle === 'black' ? '#000'
+      : d.os === 'android' && state.mode === 'browser' && !page.theme ? (browserTone === 'light' ? '#fff' : '#1f1f1f')
+      : barBg
+    const fg = L.isStatusOver ? '#fff' : (isLightColor(bg) ? '#000' : '#fff')
+    parts.push(statusBarHtml(d, L, fg, bg))
+  }
+
+  const host = hostOf(state.url, d.os === 'android')
+  if (L.bars.includes('safari-bottom')) {
+    const tools = `<div class="tools"><button data-act="back" aria-label="Back">${ICON.back}</button><button data-act="forward" aria-label="Forward">${ICON.forward}</button><button tabindex="-1" aria-hidden="true">${ICON.share}</button><button tabindex="-1" aria-hidden="true">${ICON.book}</button><button tabindex="-1" aria-hidden="true">${ICON.tabs}</button></div>`
+    parts.push(`<div class="browser safari-bottom ${browserTone}" style="height:${L.bottom + 1}px">
+      <div class="pill"><span class="aa">ᴀA</span><span class="host">${host}</span><button data-act="reload" aria-label="Reload">${ICON.reload}</button></div>${tools}</div>`)
+  }
+  if (L.bars.includes('safari-top')) {
+    parts.push(`<div class="browser safari-top ${browserTone}" style="height:${L.top + 1}px;padding:0 ${L.right}px 0 ${L.left}px">
+      <div class="pill"><span class="aa">ᴀA</span><span class="host">${host}</span><button data-act="reload" aria-label="Reload">${ICON.reload}</button></div></div>`)
+  }
+  if (L.bars.includes('chrome-bar')) {
+    const bg = page.theme || null
+    const tone = bg ? (isLightColor(bg) ? 'light' : 'dark') : browserTone
+    parts.push(`<div class="browser chrome-bar ${tone}" style="top:${L.status}px;height:${d.chromeBar + 1}px;${bg ? `background:${bg};` : ''}left:${L.left}px">
+      <div class="field">${ICON.info}<span>${host}</span></div><div class="tabs">1</div>${ICON.dots}</div>`)
+  }
+  const stripBg = pageBg || sysBg
+  if (L.bars.includes('home-strip') && L.bottom) {
+    parts.push(`<div style="left:0;right:0;bottom:0;height:${L.bottom + 1}px;background:${stripBg};z-index:1"></div>`)
+  }
+  if (L.bars.includes('nav-strip')) {
+    parts.push(`<div style="left:0;right:0;bottom:0;height:${d.nav + 1}px;background:${state.mode === 'browser' ? (browserTone === 'light' ? '#fff' : '#000') : stripBg};z-index:1"></div>`)
+  }
+  if (L.bars.includes('side-pads')) {
+    const padBg = state.mode === 'browser' && d.os === 'ios' ? (browserTone === 'light' ? '#f8f8f8' : '#1c1c1e') : stripBg
+    if (L.left) parts.push(`<div style="top:0;bottom:0;left:0;width:${L.left + 1}px;background:${padBg};z-index:1"></div>`)
+    if (L.right) parts.push(`<div style="top:0;bottom:0;right:0;width:${L.right + 1}px;background:${padBg};z-index:1"></div>`)
+  }
+
+  if (d.island) {
+    parts.push(!land
+      ? `<div class="island" style="width:${d.island.w}px;height:${d.island.h}px;top:${d.island.top}px"></div>`
+      : `<div class="island" style="width:${d.island.h}px;height:${d.island.w}px;left:${d.island.top}px;top:calc(50% - ${d.island.w / 2}px);transform:none"></div>`)
+  }
+  if (d.hole) {
+    parts.push(!land
+      ? `<div class="hole" style="width:${d.hole.d}px;height:${d.hole.d}px;top:${d.hole.top - 2}px"></div>`
+      : `<div class="hole" style="width:${d.hole.d}px;height:${d.hole.d}px;left:${d.hole.top}px;top:calc(50% - ${d.hole.d / 2}px);transform:none"></div>`)
+  }
+  if (d.homebar) {
+    // The indicator takes the contrast of what is behind it.
+    const behind = L.bars.includes('safari-bottom') ? (browserTone === 'light' ? '#f8f8f8' : '#1c1c1e') : (state.mode === 'browser' && d.os === 'android' ? (browserTone === 'light' ? '#fff' : '#000') : stripBg)
+    const tone = isLightColor(behind) ? '#111' : '#f2f2f2'
+    parts.push(`<div class="homebar" style="width:${d.homebar.w}px;height:${d.homebar.h}px;bottom:${land ? 6 : d.homebar.bottom}px;background:${tone}"></div>`)
+  }
+  parts.push(`<div class="glare" style="border-radius:${d.radius}px"></div>`)
+  $('chrome').innerHTML = parts.join('')
+
+  $('device').dataset.viewport = L.frame.width + '×' + L.frame.height
+  return L
+}
+
+function build() {
+  buildBody()
+  buildScreen()
+  renderControls()
+  fit()
+}
+
+// Sends the phone's changing facts (orientation, safe areas) to the shim.
+function sendConfig() {
+  try { frame.contentWindow.postMessage({ phonePreview: 'config', patch: shimConfig() }, '*') } catch {}
+}
+
+// Points the proxy at the app and loads it on this origin.
+async function navigate() {
+  showLoading('Loading…')
+  let target
+  try { target = new URL(state.url) } catch { showLoading('That address is not valid.', true); return }
+  try {
+    await fetch('/__phone/target', { method: 'POST', body: JSON.stringify({ url: state.url, device: shimConfig() }) })
+  } catch {
+    showLoading('The phone preview server stopped.<br><small>Run /phone again.</small>', true)
+    return
+  }
+  // A new src that differs only by its #hash (an app with hash routes) is a
+  // jump within the page: no load, no new phone identity. Reload instead.
+  const next = location.origin + target.pathname + target.search + target.hash
+  let current = null
+  try { current = frame.contentWindow.location.href } catch {}
+  if (current && current !== 'about:blank' && current.split('#')[0] === next.split('#')[0]) {
+    if (current !== next) frame.contentWindow.location.hash = target.hash
+    frame.contentWindow.location.reload()
+  } else {
+    frame.src = next
+  }
+  clearTimeout(loadTimer)
+  loadTimer = setTimeout(() => showLoading(`Still loading ${state.url}<br><small>Is your dev server running?</small>`, true), 10000)
+}
+function showLoading(html, isStuck) {
+  const el = $('loading')
+  el.hidden = false
+  el.innerHTML = (isStuck ? '' : '<div class="spinner"></div>') + `<div>${html}</div>`
+}
+frame.addEventListener('load', () => {
+  clearTimeout(loadTimer)
+  $('loading').hidden = true
+})
+
+// Safari's and Chrome's own buttons drive the app's history.
+$('chrome').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]')?.dataset.act
+  if (!act) return
+  try {
+    if (act === 'back') frame.contentWindow.history.back()
+    else if (act === 'forward') frame.contentWindow.history.forward()
+    else if (act === 'reload') frame.contentWindow.location.reload()
+  } catch { navigate() }
+})
+
+window.addEventListener('message', e => {
+  if (e.source !== frame.contentWindow || !e.data || !e.data.phonePreview) return
+  const data = e.data
+  if (data.phonePreview === 'page') {
+    const before = JSON.stringify(page)
+    page = { isCover: data.isCover, theme: data.theme, barStyle: data.barStyle, background: data.background }
+    // Keep the address in step with where the app went.
+    try {
+      const now = new URL(data.path, state.url).href
+      if (now !== state.url) { state.url = now; $('url').value = now; persist() }
+    } catch {}
+    if (JSON.stringify(page) !== before) { buildScreen(); fit(); sendConfig() }
+  } else if (data.phonePreview === 'zoom') {
+    toast(`On an iPhone this field would zoom the page in: its text is ${Math.round(data.size * 10) / 10}px, under 16px.`, 4200)
+  }
+})
+
+function fit() {
+  const stage = $('stage'), device = $('device'), holder = $('holder')
+  const [W, H] = device.dataset.size.split('x').map(Number)
+  const room = Math.min((stage.clientWidth - 48) / W, (stage.clientHeight - 40) / H)
+  const scale = state.zoom === 'fit' ? Math.min(1, room) : state.zoom / 100
+  shownScale = scale
+  holder.style.width = W + 'px'
+  holder.style.height = H + 'px'
+  holder.style.transform = `translate(-50%, -50%) scale(${scale})`
+  // Centred when it fits; pinned to the top left with room to scroll when not.
+  holder.style.left = Math.round(Math.max(stage.clientWidth / 2, (W * scale) / 2 + 24)) + 'px'
+  holder.style.top = Math.round(Math.max(stage.clientHeight / 2, (H * scale) / 2 + 28)) + 'px'
+  const isBigger = W * scale + 48 > stage.clientWidth || H * scale + 56 > stage.clientHeight
+  stage.style.overflow = isBigger ? 'auto' : 'hidden'
+  const d = DEVICES[state.device]
+  const [vw, vh] = device.dataset.viewport.split('×')
+  const where = state.mode === 'app' ? 'Home Screen app' : d.os === 'ios' ? 'Safari' : 'Chrome'
+  $('meta').innerHTML = `<b>${d.label}</b><span class="dot"></span><span>${where}</span><span class="dot"></span><span>${vw} × ${vh} viewport</span><span class="dot"></span><span>${Math.round(scale * 100)}%</span>`
+  $('zoomLabel').textContent = state.zoom === 'fit' ? `Fit` : `${state.zoom}%`
+  $('zoomFit').title = state.zoom === 'fit' ? `Fitted at ${Math.round(scale * 100)}%` : 'Fit to window (0)'
+  $('zoomOut').disabled = scale <= ZOOM_STEPS[0] / 100 + 0.001
+  $('zoomIn').disabled = scale >= ZOOM_STEPS[ZOOM_STEPS.length - 1] / 100 - 0.001
+  const land = state.landscape
+  $('rotateIcon').innerHTML = land ? PHONE_PORTRAIT : PHONE_LANDSCAPE
+  $('rotateLabel').textContent = land ? 'Portrait' : 'Landscape'
+  $('rotate').setAttribute('aria-label', land ? 'Turn to portrait' : 'Turn to landscape')
+}
+
+// Zoom moves through these percentages; the middle button returns to fit.
+const ZOOM_STEPS = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200]
+let shownScale = 1
+function zoomBy(direction) {
+  const now = Math.round(shownScale * 100)
+  const next = direction > 0
+    ? ZOOM_STEPS.find(step => step > now)
+    : [...ZOOM_STEPS].reverse().find(step => step < now)
+  if (next === undefined) return
+  state.zoom = next
+  persist()
+  fit()
+}
+const PHONE_PORTRAIT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 5.5h2"/></svg>'
+const PHONE_LANDSCAPE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M5.5 11v2"/></svg>'
+
+function radio(container, items, current, onPick) {
+  container.innerHTML = ''
+  for (const item of items) {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.setAttribute('role', 'radio')
+    b.setAttribute('aria-checked', String(item.id === current))
+    b.title = item.title ?? item.label
+    b.setAttribute('aria-label', item.title ?? item.label)
+    b.innerHTML = (item.glyph ?? '') + `<span>${item.label}</span>`
+    b.onclick = () => onPick(item.id)
+    container.appendChild(b)
+  }
+}
+
+function renderControls() {
+  radio($('devices'), Object.entries(DEVICES).map(([id, d]) => ({ id, label: d.label, glyph: GLYPHS[d.classic ? 'classic' : d.os] })), state.device, id => {
+    // Another phone is another browser: the app reloads with its identity.
+    state.device = id
+    persist()
+    build()
+    navigate()
+  })
+  const ios = DEVICES[state.device].os === 'ios'
+  radio($('modes'), [
+    { id: 'browser', label: ios ? 'Safari' : 'Chrome', title: `Opened in ${ios ? 'Safari' : 'Chrome'}, with its toolbar` },
+    { id: 'app', label: 'Home Screen', title: 'Opened from the Home Screen as an installed web app' },
+  ], state.mode, id => {
+    state.mode = id
+    persist()
+    build()
+    navigate()
+  })
+  const d = DEVICES[state.device]
+  const current = colorOf(d).name
+  const sw = $('swatches')
+  sw.innerHTML = ''
+  for (const [name, hex] of Object.entries(d.colors)) {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'swatch'
+    b.title = name
+    b.setAttribute('role', 'radio')
+    b.setAttribute('aria-label', name)
+    b.setAttribute('aria-checked', String(name === current))
+    b.style.background = `linear-gradient(145deg, ${shade(hex, 0.08)}, ${hex})`
+    b.onclick = () => { state.colors[state.device] = name; persist(); buildBody(); renderControls() }
+    sw.appendChild(b)
+  }
+}
+
+function normalize(raw) {
+  const u = raw.trim()
+  if (!u) return state.url
+  if (/^\d+$/.test(u)) return 'http://localhost:' + u
+  if (/^[a-z]+:\/\//i.test(u)) return u
+  return (/^(localhost|127\.|\[::1\])/.test(u) ? 'http://' : 'https://') + u
+}
+
+let toastTimer
+function toast(text, ms = 1600) {
+  const t = $('toast')
+  t.textContent = text
+  t.classList.add('show')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms)
+}
+
+$('urlForm').onsubmit = e => {
+  e.preventDefault()
+  state.url = normalize($('url').value)
+  $('url').value = state.url
+  $('url').blur()
+  page = { isCover: false, theme: null, barStyle: null, background: null }
+  persist()
+  buildScreen()
+  navigate()
+}
+$('reload').onclick = () => navigate()
+// Turning the phone resizes the app in place, as on a real phone.
+$('rotate').onclick = () => { state.landscape = !state.landscape; persist(); build(); sendConfig() }
+$('zoomIn').onclick = () => zoomBy(1)
+$('zoomOut').onclick = () => zoomBy(-1)
+$('zoomFit').onclick = () => { state.zoom = 'fit'; persist(); fit() }
+$('external').onclick = () => window.open(state.url, '_blank', 'noopener')
+addEventListener('resize', fit)
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => buildScreen())
+addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return
+  const k = e.key.toLowerCase()
+  if (k === 'r') navigate()
+  else if (k === 'l') $('rotate').click()
+  else if (k === '+' || k === '=') zoomBy(1)
+  else if (k === '-' || k === '_') zoomBy(-1)
+  else if (k === '0') $('zoomFit').click()
+})
+// Ctrl or pinch on a trackpad zooms the phone, not the page.
+$('stage').addEventListener('wheel', e => {
+  if (!e.ctrlKey) return
+  e.preventDefault()
+  zoomBy(e.deltaY < 0 ? 1 : -1)
+}, { passive: false })
+setInterval(() => { for (const el of document.querySelectorAll('[data-clock]')) el.textContent = clock() }, 15000)
+
+// After Claude edits a file the mod posts /reload; apps without hot reload
+// need the page reloaded to show the change.
+$('auto').checked = store.get('reload-on-edit', true)
+$('auto').onchange = () => store.set('reload-on-edit', $('auto').checked)
+try {
+  new EventSource('/__phone/events').onmessage = e => {
+    if (e.data === 'reload' && $('auto').checked) {
+      try { frame.contentWindow.location.reload() } catch { navigate() }
+      toast('Reloaded after an edit')
+    }
+  }
+} catch {}
+
+$('url').value = state.url
+persist()
+build()
+navigate()
+</script>
+</body>
+</html>

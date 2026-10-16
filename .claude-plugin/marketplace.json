@@ -1,0 +1,6 @@
+{
+  "name": "phone-preview",
+  "description": "Mishat's phone preview plugin",
+  "owner": { "name": "Mishat Hassan" },
+  "plugins": [{ "name": "phone-preview", "source": "./" }]
+}
