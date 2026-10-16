@@ -147,7 +147,8 @@
   }
   .custom input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   .custom .x { color: var(--muted); }
-  .custom .seg button { height: 24px; padding: 0 8px; }
+  .menu .systems { margin: 2px 2px 4px; }
+  .menu .systems button { flex: 1; justify-content: center; }
   .custom .go { margin-left: auto; height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--active); color: var(--on-active); cursor: pointer; font-size: 12px; }
 
   /* An iPad's Safari bar: back and forward, the address, share and tabs. */
@@ -441,7 +442,7 @@ const DEVICES = {
     colors: { 'Desert Titanium': '#bfa48f', 'Natural Titanium': '#c2bcb2', 'White Titanium': '#e8e6e1', 'Black Titanium': '#3d3d3f' },
   },
   pixel8: {
-    label: 'Pixel 8', group: 'Android', os: 'android', model: 'Pixel 8', screen: [412, 915], dpr: 2.625, radius: 46, bezel: 13, rim: 5,
+    label: 'Pixel 8', group: 'Phones', os: 'android', model: 'Pixel 8', screen: [412, 915], dpr: 2.625, radius: 46, bezel: 13, rim: 5,
     status: 36, statusLand: 28, nav: 24, chromeBar: 56, cutoutLand: 36,
     kb: { h: 320, hLand: 236, bar: 44, barLand: 40 },
     hole: { d: 18, top: 13 }, homebar: { w: 108, h: 4, bottom: 9 },
@@ -449,7 +450,7 @@ const DEVICES = {
     colors: { Obsidian: '#2c2d30', Hazel: '#8e9488', Rose: '#e9cfc7' },
   },
   galaxys24: {
-    label: 'Galaxy S24', group: 'Android', os: 'android', model: 'SM-S921B', screen: [360, 780], dpr: 3, radius: 34, bezel: 9, rim: 4,
+    label: 'Galaxy S24', group: 'Phones', os: 'android', model: 'SM-S921B', screen: [360, 780], dpr: 3, radius: 34, bezel: 9, rim: 4,
     status: 32, statusLand: 26, nav: 24, chromeBar: 56, cutoutLand: 30,
     kb: { h: 302, hLand: 226, bar: 42, barLand: 38 },
     hole: { d: 14, top: 11 }, homebar: { w: 96, h: 4, bottom: 8 },
@@ -457,7 +458,7 @@ const DEVICES = {
     colors: { Onyx: '#2a2b2e', Marble: '#cfcfcc', Violet: '#7d7aa3', Amber: '#efe2b3' },
   },
   galaxyzfold: {
-    label: 'Galaxy Z Fold5', group: 'Android', os: 'android', model: 'SM-F946B', screen: [344, 882], dpr: 2.625, radius: 26, bezel: 9, rim: 4,
+    label: 'Galaxy Z Fold5', group: 'Foldable', os: 'android', model: 'SM-F946B', screen: [344, 882], dpr: 2.625, radius: 26, bezel: 9, rim: 4,
     status: 32, statusLand: 26, nav: 24, chromeBar: 56, cutoutLand: 30,
     kb: { h: 300, hLand: 220, bar: 42, barLand: 38 },
     hole: { d: 12, top: 10 }, homebar: { w: 96, h: 4, bottom: 8 },
@@ -471,7 +472,7 @@ const DEVICES = {
     },
   },
   ipadair: {
-    label: 'iPad Air', group: 'Tablet', os: 'ios', tablet: true, screen: [820, 1180], dpr: 2, radius: 18, bezel: 20, rim: 4,
+    label: 'iPad Air', group: 'iPad', os: 'ios', tablet: true, screen: [820, 1180], dpr: 2, radius: 18, bezel: 20, rim: 4,
     status: 24, home: 20, homeLand: 20, safari: { top: 50 },
     kb: { h: 313, hLand: 398, bar: 55, barLand: 55 },
     camera: { d: 7 }, homebar: { w: 200, h: 5, bottom: 7 },
@@ -1405,18 +1406,21 @@ function pickDevice(id) {
   navigate()
 }
 
+// The menu shows one system's devices at a time, starting with the current one's.
+let menuOs = 'ios'
 function fillDeviceMenu() {
   const groups = {}
-  for (const [id, d] of Object.entries(DEVICES)) (groups[d.group] ??= []).push([id, d])
+  for (const [id, d] of Object.entries(DEVICES)) if (d.os === menuOs) (groups[d.group] ??= []).push([id, d])
+  const systems = `<div class="seg systems" role="radiogroup" aria-label="System">${[['ios', 'iOS'], ['android', 'Android']].map(([os, name]) =>
+    `<button type="button" role="radio" aria-checked="${menuOs === os}" data-system="${os}">${name}</button>`).join('')}</div>`
   const items = Object.entries(groups).map(([group, list]) => `<h6>${group}</h6>` + list.map(([id, d]) =>
     `<button class="item" type="button" role="menuitemradio" aria-checked="${id === state.device}" data-device="${id}">${GLYPHS[glyphOf(d)]}<span>${d.label}</span><span class="sub">${d.screen[0]} × ${d.screen[1]}</span>${CHECK}</button>`).join('')).join('')
   const c = state.custom
-  $('deviceMenu').innerHTML = items + `<h6>Custom size</h6>
+  $('deviceMenu').innerHTML = systems + items + `<h6>Custom ${menuOs === 'ios' ? 'iOS' : 'Android'} size</h6>
     <form class="custom" id="customForm">
       <input id="customW" type="number" inputmode="numeric" min="240" max="1400" value="${c.w}" aria-label="Width in CSS pixels">
       <span class="x">×</span>
       <input id="customH" type="number" inputmode="numeric" min="240" max="1400" value="${c.h}" aria-label="Height in CSS pixels">
-      <div class="seg" role="radiogroup" aria-label="System">${['ios', 'android'].map(os => `<button type="button" role="radio" aria-checked="${c.os === os}" data-os="${os}">${os === 'ios' ? 'iOS' : 'Android'}</button>`).join('')}</div>
       <button class="go" type="submit">Use</button>
     </form>`
 }
@@ -1440,13 +1444,20 @@ function toggleMenu(button, menu, fill) {
   button.setAttribute('aria-expanded', 'true')
   ;(menu.querySelector('.item[aria-checked="true"]') || menu.querySelector('.item'))?.focus()
 }
-$('deviceBtn').onclick = () => toggleMenu($('deviceBtn'), $('deviceMenu'), fillDeviceMenu)
+$('deviceBtn').onclick = () => {
+  menuOs = dev().os
+  toggleMenu($('deviceBtn'), $('deviceMenu'), fillDeviceMenu)
+}
 $('netBtn').onclick = () => toggleMenu($('netBtn'), $('netMenu'), fillNetMenu)
 $('deviceMenu').addEventListener('click', e => {
   const item = e.target.closest('[data-device]')
   if (item) return pickDevice(item.dataset.device)
-  const os = e.target.closest('[data-os]')
-  if (os) for (const b of $('deviceMenu').querySelectorAll('[data-os]')) b.setAttribute('aria-checked', String(b === os))
+  const system = e.target.closest('[data-system]')
+  if (system && system.dataset.system !== menuOs) {
+    menuOs = system.dataset.system
+    fillDeviceMenu()
+    $('deviceMenu').querySelector(`[data-system="${menuOs}"]`).focus()
+  }
 })
 $('deviceMenu').addEventListener('submit', e => {
   e.preventDefault()
@@ -1454,7 +1465,7 @@ $('deviceMenu').addEventListener('submit', e => {
   state.custom = {
     w: size($('customW').value, 390),
     h: size($('customH').value, 844),
-    os: $('deviceMenu').querySelector('[data-os][aria-checked="true"]')?.dataset.os || 'ios',
+    os: menuOs,
   }
   pickDevice('custom')
 })
