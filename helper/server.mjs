@@ -11,6 +11,7 @@ import https from 'node:https'
 import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { detect } from './detect.mjs'
 
 const FIRST_PORT = 7357
 const LAST_PORT = 7377
@@ -104,6 +105,10 @@ async function phoneRoute(req, res, sub) {
   } else if (sub === '/reload' && req.method === 'POST') {
     for (const listener of listeners) listener.write('data: reload\n\n')
     json(res, 200, { frames: listeners.size })
+  } else if (sub === '/detect') {
+    // The app's dev server, found from its project folder and the usual ports.
+    const q = new URL(req.url, 'http://x').searchParams
+    json(res, 200, await detect({ dir: q.get('dir') || undefined, port: q.get('port') || undefined }))
   } else if (sub === '/health') {
     json(res, 200, { app: 'phone-preview', target: target.origin, network })
   } else {

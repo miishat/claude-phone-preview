@@ -3,6 +3,11 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 const AFTER_EDIT_MS = 800
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 const DEFAULT_URL = 'http://localhost:5173'
+// The devices the frame knows; a word among them is a device, not an address.
+const DEVICES = new Set([
+  'iphonese', 'iphone15', 'iphone16pro', 'iphone16promax', 'iphone17pro', 'iphone17promax', 'iphone18pro', 'iphone18promax',
+  'pixel8', 'galaxys24', 'galaxys', 'galaxyzfold', 'fold', 'ipadair', 'ipad',
+])
 // Where helper/server.mjs listens first; a server Claude started by hand for
 // the Browser pane is usually here.
 const FIRST_PORT = '7357'
@@ -47,6 +52,22 @@ function startHelper($: $): Promise<string> {
   return starting
 }
 
+// Asks the helper for the dev server of the project Claude works in. A bare
+// port narrows it to that port and still picks up the base path.
+// Undefined when the helper couldn't be asked; url null when it found nothing.
+async function findApp($: $, at: string, port?: string): Promise<{ url: string | null; why: string } | undefined> {
+  try {
+    const query = new URLSearchParams({ dir: await $.session.cwd(), ...(port ? { port } : {}) })
+    const res = await $.http.fetch(`http://127.0.0.1:${at}/__phone/detect?${query}`)
+    const found = JSON.parse(res.text) as { url?: string | null; why?: string }
+    const url = found.url && (!port || found.url.startsWith(`http://localhost:${port}/`)) ? found.url : null
+
+    return { url, why: found.why ?? '' }
+  } catch {
+    return undefined
+  }
+}
+
 function normalizeUrl(raw: string) {
   const url = raw.trim()
   if (/^[a-z]+:\/\//i.test(url)) return url
@@ -61,7 +82,7 @@ export const register: Register = on => {
     const started = await next(e)
     await $.command.register({
       name: 'phone',
-      description: 'Start the phone frame for your app and print its link: /phone [url or port] [iphone15|iphonese|pixel8|galaxys]',
+      description: 'Start the phone frame for your app and print its link: /phone [url or port] [device]. With no address it finds your dev server.',
     })
 
     return started
@@ -72,17 +93,34 @@ export const register: Register = on => {
   // from auto mode, so the mod does not open it itself.
   on('command.run', { command: 'phone' }, async ($, e) => {
     try {
-      const [first, second] = (e.args ?? '').trim().split(/\s+/)
-      const stored = (await $.store.get('url')) as string | undefined
-      const url = first ? normalizeUrl(first) : (stored ?? DEFAULT_URL)
-      const device = second || ((await $.store.get('device')) as string | undefined) || 'iphone15'
+      const words = (e.args ?? '').trim().split(/\s+/).filter(Boolean)
+      const deviceWord = words.find(word => DEVICES.has(word.toLowerCase()))
+      const address = words.find(word => word !== deviceWord)
+      const device = deviceWord?.toLowerCase() || ((await $.store.get('device')) as string | undefined) || 'iphone15'
+      const at = port ?? (await startHelper($))
+
+      // No address, or only a port: find the dev server and its base path.
+      let url: string
+      let how = ''
+      const found = !address || /^\d+$/.test(address) ? await findApp($, at, address) : undefined
+      if (found?.url) {
+        url = found.url
+        how = ` (found it: ${found.why})`
+      } else if (found && !address) {
+        // Better no phone than another project's app.
+        return { text: `No dev server found for this project. ${found.why}
+Start it (for example npm run dev), then run /phone again, or give its address: /phone <url or port>.` }
+      } else if (address) {
+        url = normalizeUrl(address)
+      } else {
+        url = ((await $.store.get('url')) as string | undefined) ?? DEFAULT_URL
+        how = ' (no dev server answered, so this is the last address used)'
+      }
       await $.store.set('url', url)
       await $.store.set('device', device)
-
-      const at = port ?? (await startHelper($))
       const frame = `http://127.0.0.1:${at}/__phone/?${new URLSearchParams({ url, device })}`
 
-      return { text: `Phone frame ready for ${url}: ${frame}\nAsk Claude to open it in the Browser pane.` }
+      return { text: `Phone frame ready for ${url}${how}: ${frame}\nAsk Claude to open it in the Browser pane.` }
     } catch (err) {
       return { text: `Phone preview failed: ${err instanceof Error ? err.message : String(err)}` }
     }

@@ -1,6 +1,6 @@
 # phone-preview
 
-A Claude Code plugin that shows the app you are building inside an interactive phone frame in the desktop app's built-in Browser pane. It comes with iPhone SE, 15, 16 Pro and 16 Pro Max, Pixel 8, Galaxy S24, a Galaxy Z Fold5 that folds and unfolds, an iPad Air, and any custom size for iOS or Android. It has Safari/Chrome and Home Screen modes, rotation and zoom, and it reloads after Claude edits files.
+A Claude Code plugin that shows the app you are building inside an interactive phone frame in the desktop app's built-in Browser pane. It comes with iPhone SE, 15, 16 to 18 Pro and 16 to 18 Pro Max (each generation shares one screen size), Pixel 8, Galaxy S24, a Galaxy Z Fold5 that folds and unfolds, an iPad Air, and any custom size for iOS or Android. It has Safari/Chrome and Home Screen modes, rotation and zoom, and it reloads after Claude edits files.
 
 It behaves like the phone where layouts usually break:
 
@@ -9,11 +9,12 @@ It behaves like the phone where layouts usually break:
 - **iPad.** Like a real iPad, it reports a Mac user agent to the app.
 - **Browser bars.** Scrolling the page down shrinks Safari's toolbar or hides Chrome's address bar, and scrolling up brings them back. `100vh` is the large viewport, `100svh` the small one and `100dvh` follows the bars, as on a phone.
 
-Ask Claude for "the phone" in any session, or run `/phone [url|port] [device]`.
+Ask Claude for "the phone" in any session, or run `/phone [url|port] [device]`. With no address it finds your app's dev server: it reads the project's package.json and framework config (Vite, Next.js, Angular, Astro, Nuxt, SvelteKit, Create React App, Expo) for the port and base path, checks the usual dev ports, and picks the server that serves this project, never another project's.
 
 ## How it works
 
 - `helper/server.mjs` serves the frame at `/__phone/` and proxies everything else to your dev server, so the app runs on the frame's origin and gets the pane's phone emulation. It rewrites `env(safe-area-inset-*)` to the frame's insets and injects `helper/shim.js`, which reports the chosen device to the app.
+- `helper/detect.mjs` finds the dev server (`/__phone/detect?dir=<project>`, or `node helper/detect.mjs <project>`).
 - `hooks/register.tsx` registers `/phone` and, after each edit Claude makes, asks open frames to reload.
 - `skills/phone` tells Claude how to open the frame in the Browser pane.
 

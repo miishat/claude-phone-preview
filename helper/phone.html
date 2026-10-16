@@ -426,7 +426,7 @@ const DEVICES = {
     colors: { Black: '#3b3c3e', Blue: '#d4dee3', Green: '#cfdccb', Yellow: '#ede4c6', Pink: '#ecd0d3' },
   },
   iphone16pro: {
-    label: 'iPhone 16 Pro', group: 'iPhone', os: 'ios', screen: [402, 874], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
+    label: 'iPhone 16–18 Pro', group: 'iPhone', os: 'ios', screen: [402, 874], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
     status: 62, home: 34, homeLand: 21, sideLand: 62, safari: { bottom: 134, min: 48, landTop: 44 },
     kb: { h: 336, hLand: 206, bar: 44, barLand: 36 },
     island: { w: 125, h: 37, top: 14 }, homebar: { w: 140, h: 5, bottom: 8 },
@@ -434,7 +434,7 @@ const DEVICES = {
     colors: { 'Desert Titanium': '#bfa48f', 'Natural Titanium': '#c2bcb2', 'White Titanium': '#e8e6e1', 'Black Titanium': '#3d3d3f' },
   },
   iphone16promax: {
-    label: 'iPhone 16 Pro Max', group: 'iPhone', os: 'ios', screen: [440, 956], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
+    label: 'iPhone 16–18 Pro Max', group: 'iPhone', os: 'ios', screen: [440, 956], dpr: 3, radius: 62, bezel: 9, rim: 4.5,
     status: 62, home: 34, homeLand: 21, sideLand: 62, safari: { bottom: 134, min: 48, landTop: 44 },
     kb: { h: 346, hLand: 210, bar: 44, barLand: 36 },
     island: { w: 125, h: 37, top: 14 }, homebar: { w: 150, h: 5, bottom: 8 },
@@ -480,7 +480,13 @@ const DEVICES = {
     colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Purple: '#cbc3dc', Blue: '#c3d0dc' },
   },
 }
-const ALIASES = { galaxys: 'galaxys24', iphone16: 'iphone16pro', fold: 'galaxyzfold', ipad: 'ipadair' }
+// The 16, 17 and 18 Pro share one screen, as do the three Pro Max, and so
+// does the plain iPhone 17.
+const ALIASES = {
+  galaxys: 'galaxys24', fold: 'galaxyzfold', ipad: 'ipadair',
+  iphone16: 'iphone16pro', iphone17: 'iphone16pro', iphone17pro: 'iphone16pro', iphone18pro: 'iphone16pro',
+  iphone17promax: 'iphone16promax', iphone18promax: 'iphone16promax',
+}
 
 // The device as drawn now: a custom size, or a foldable opened up.
 function dev() {
