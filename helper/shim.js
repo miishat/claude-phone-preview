@@ -33,6 +33,20 @@
     define(nav, 'userAgentData', () => data)
   }
 
+  // The network the frame picked. Safari has no navigator.connection.
+  const NET = { online: ['4g', 10, 50], fast4g: ['4g', 9, 40], slow4g: ['4g', 1.6, 150], '3g': ['3g', 0.75, 400], offline: ['4g', 0, 0] }
+  const net = () => NET[config.network] || NET.online
+  define(nav, 'onLine', () => config.network !== 'offline')
+  if (isIos) define(nav, 'connection', () => undefined)
+  else if (window.NetworkInformation) {
+    const info = NetworkInformation.prototype
+    define(info, 'effectiveType', () => net()[0])
+    define(info, 'downlink', () => net()[1])
+    define(info, 'rtt', () => net()[2])
+    define(info, 'saveData', () => false)
+    define(info, 'type', () => (config.network === 'online' ? 'wifi' : 'cellular'))
+  }
+
   // Screen and pixel ratio.
   define(window, 'devicePixelRatio', () => config.dpr)
   const scr = Screen.prototype
@@ -77,6 +91,7 @@
   window.addEventListener('message', e => {
     if (e.source !== parent || !e.data || e.data.phonePreview !== 'config') return
     const wasLandscape = config.landscape
+    const networkBefore = config.network
     const keyboardBefore = JSON.stringify(config.keyboard ?? null)
     Object.assign(config, e.data.patch)
     paint()
@@ -85,6 +100,12 @@
       window.dispatchEvent(new Event('orientationchange'))
     }
     if (JSON.stringify(config.keyboard ?? null) !== keyboardBefore) onKeyboard()
+    if (config.network !== networkBefore) {
+      if ((networkBefore === 'offline') !== (config.network === 'offline')) {
+        window.dispatchEvent(new Event(config.network === 'offline' ? 'offline' : 'online'))
+      }
+      try { navigator.connection?.dispatchEvent(new Event('change')) } catch {}
+    }
   })
 
   // Tell the frame what the page asks of the phone.

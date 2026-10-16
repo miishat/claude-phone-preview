@@ -21,6 +21,53 @@ const file = name => readFileSync(path.join(here, name))
 let target = { origin: 'http://localhost:5173', device: {} }
 const listeners = new Set()
 
+// Network conditions the frame picked: latency before each response and the
+// download speed (kbps). The app's own code (scripts, styles, workers) loads
+// at full speed, so a dev server's hundreds of modules don't crawl; pages,
+// data, images and fonts get the phone's network.
+const NETWORKS = {
+  online: null,
+  fast4g: { latency: 40, kbps: 9000 },
+  slow4g: { latency: 150, kbps: 1600 },
+  '3g': { latency: 400, kbps: 750 },
+  offline: { offline: true },
+}
+let network = 'online'
+const isAppCode = req => ['script', 'style', 'worker', 'sharedworker', 'serviceworker'].includes(String(req.headers['sec-fetch-dest']))
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+// Writes in small pieces at the network's download speed.
+async function writePaced(res, buf, kbps) {
+  for (let i = 0; i < buf.length && !res.destroyed; i += 8192) {
+    const piece = buf.subarray(i, i + 8192)
+    res.write(piece)
+    await sleep((piece.length * 8) / kbps)
+  }
+}
+function pipePaced(src, res, net) {
+  if (!net) return src.pipe(res)
+  let chain = Promise.resolve()
+  src.on('data', chunk => {
+    src.pause()
+    chain = chain.then(() => writePaced(res, chunk, net.kbps)).then(() => src.resume())
+  })
+  src.on('end', () => chain.then(() => res.end()))
+}
+function endPaced(res, body, net) {
+  if (!net) return res.end(body)
+  writePaced(res, body, net.kbps).then(() => res.end())
+}
+
+// What the phone's browser shows for a page it can't reach offline.
+function offlinePage(res) {
+  const ios = target.device.os === 'ios'
+  const [title, text] = ios
+    ? ['Safari Cannot Open the Page', 'Safari cannot open the page because your iPhone is not connected to the internet.']
+    : ['No internet', 'Try checking the network cables, modem and router, or reconnecting to Wi-Fi.']
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+  res.end(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:32px;box-sizing:border-box;font:16px/1.4 -apple-system,system-ui,sans-serif;color:#555;background:#fff;text-align:${ios ? 'center' : 'left'}"><h1 style="font-size:${ios ? 22 : 24}px;color:#222;margin:0 0 12px">${title}</h1><p style="margin:0">${text}</p></body>`)
+}
+
 const TEXT = /^(text\/html|text\/css|(application|text)\/(javascript|ecmascript)|application\/x-javascript)/
 
 function json(res, status, body) {
@@ -43,7 +90,12 @@ async function phoneRoute(req, res, sub) {
     const next = JSON.parse((await readBody(req)) || '{}')
     const origin = new URL(next.url).origin
     target = { origin, device: next.device ?? {} }
+    if (next.network in NETWORKS) network = next.network
     json(res, 200, { origin })
+  } else if (sub === '/network' && req.method === 'POST') {
+    const next = JSON.parse((await readBody(req)) || '{}')
+    if (next.network in NETWORKS) network = next.network
+    json(res, 200, { network })
   } else if (sub === '/events') {
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' })
     res.write(': connected\n\n')
@@ -53,7 +105,7 @@ async function phoneRoute(req, res, sub) {
     for (const listener of listeners) listener.write('data: reload\n\n')
     json(res, 200, { frames: listeners.size })
   } else if (sub === '/health') {
-    json(res, 200, { app: 'phone-preview', target: target.origin })
+    json(res, 200, { app: 'phone-preview', target: target.origin, network })
   } else {
     res.writeHead(404).end()
   }
@@ -87,6 +139,19 @@ function rewriteText(text, isHtml, self) {
 }
 
 function proxy(req, res) {
+  const net = isAppCode(req) ? null : NETWORKS[network]
+  if (!net) return forward(req, res, null)
+  if (net.offline) {
+    const dest = String(req.headers['sec-fetch-dest'])
+    // A page load gets the browser's offline page; anything else fails the way a dropped connection does.
+    if (dest === 'document' || dest === 'iframe') offlinePage(res)
+    else req.socket.destroy()
+    return
+  }
+  setTimeout(() => forward(req, res, net), net.latency)
+}
+
+function forward(req, res, net) {
   const up = new URL(req.url, target.origin)
   const lib = up.protocol === 'https:' ? https : http
   const self = `http://${req.headers.host}`
@@ -104,7 +169,7 @@ function proxy(req, res) {
     const type = String(headers['content-type'] ?? '')
     if (!TEXT.test(type) || req.method === 'HEAD') {
       res.writeHead(upRes.statusCode ?? 502, headers)
-      upRes.pipe(res)
+      pipePaced(upRes, res, net)
       return
     }
     const chunks = []
@@ -113,7 +178,8 @@ function proxy(req, res) {
       const body = Buffer.from(rewriteText(Buffer.concat(chunks).toString('utf8'), type.startsWith('text/html'), self))
       delete headers['content-encoding']
       headers['content-length'] = String(body.length)
-      res.writeHead(upRes.statusCode ?? 502, headers).end(body)
+      res.writeHead(upRes.statusCode ?? 502, headers)
+      endPaced(res, body, net)
     })
   })
   upstream.on('error', err => {
