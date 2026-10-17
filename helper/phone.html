@@ -461,8 +461,10 @@ const PRO_440 = {
 // The iPhone 18 Pro's island is about a third narrower.
 const ISLAND_18 = { w: 82, h: 37, top: 14 }
 // iPads: all at 2x, a 24px status bar, a 20px home indicator, Safari's bar on top.
+// A tablet's bezel is its body less its screen, from the maker's millimetres
+// and pixel density, less the 4px rim: (body mm / 25.4 × ppi − pixels) / 2 / 2.
 const IPAD = {
-  os: 'ios', tablet: true, dpr: 2, radius: 18, bezel: 20, rim: 4,
+  os: 'ios', tablet: true, dpr: 2, radius: 18, bezel: 50, rim: 4,
   status: 24, home: 20, homeLand: 20, safari: { top: 50 },
   kb: { h: 313, hLand: 398, bar: 55, barLand: 55 },
   camera: { d: 7 }, homebar: { w: 200, h: 5, bottom: 7 },
@@ -532,14 +534,14 @@ const DEVICES = {
     colors: { Midnight: '#262b33', Starlight: '#f3ede6', Red: '#b5172f' },
   },
   ipadmini: {
-    ...IPAD, label: 'iPad mini', group: 'iPad', screen: [744, 1133], radius: 21, bezel: 18,
+    ...IPAD, label: 'iPad mini', group: 'iPad', screen: [744, 1133], radius: 21, bezel: 57,
     kb: { h: 300, hLand: 380, bar: 55, barLand: 55 },
     camera: { d: 7, edge: 'short' }, homebar: { w: 180, h: 5, bottom: 7 },
     buttons: { right: [[40, 44]], top: [[560, 44], [620, 44]] },
     colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Blue: '#b9c7d6', Purple: '#c9bfdc' },
   },
   ipad: {
-    ...IPAD, label: 'iPad', group: 'iPad', screen: [820, 1180],
+    ...IPAD, label: 'iPad', group: 'iPad', screen: [820, 1180], bezel: 52,
     colors: { Silver: '#e3e4e5', Blue: '#a9c2dc', Pink: '#efc4cf', Yellow: '#efdf9c' },
   },
   ipadair: {
@@ -547,16 +549,16 @@ const DEVICES = {
     colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Purple: '#cbc3dc', Blue: '#c3d0dc' },
   },
   ipadair13: {
-    ...IPAD, label: 'iPad Air 13″', group: 'iPad', screen: [1024, 1366],
+    ...IPAD, label: 'iPad Air 13″', group: 'iPad', screen: [1024, 1366], bezel: 42,
     kb: { h: 360, hLand: 420, bar: 55, barLand: 55 },
     colors: { 'Space Gray': '#4a4b4f', Starlight: '#e7e1d6', Purple: '#cbc3dc', Blue: '#c3d0dc' },
   },
   ipadpro11: {
-    ...IPAD, label: 'iPad Pro 11″', group: 'iPad', screen: [834, 1210], bezel: 16,
+    ...IPAD, label: 'iPad Pro 11″', group: 'iPad', screen: [834, 1210], bezel: 40,
     colors: { 'Space Black': '#2c2c2e', Silver: '#dcdcdc' },
   },
   ipadpro13: {
-    ...IPAD, label: 'iPad Pro 13″', group: 'iPad', screen: [1032, 1376], bezel: 16,
+    ...IPAD, label: 'iPad Pro 13″', group: 'iPad', screen: [1032, 1376], bezel: 40,
     kb: { h: 360, hLand: 420, bar: 55, barLand: 55 },
     colors: { 'Space Black': '#2c2c2e', Silver: '#dcdcdc' },
   },
@@ -591,7 +593,7 @@ const DEVICES = {
     },
   },
   pixeltablet: {
-    label: 'Pixel Tablet', group: 'Tablet', os: 'android', tablet: true, model: 'Pixel Tablet', screen: [800, 1280], dpr: 2, radius: 22, bezel: 24, rim: 4,
+    label: 'Pixel Tablet', group: 'Tablet', os: 'android', tablet: true, model: 'Pixel Tablet', screen: [800, 1280], dpr: 2, radius: 22, bezel: 56, rim: 4,
     status: 28, statusLand: 28, nav: 24, chromeBar: 56, tabStrip: 40, cutoutLand: 0,
     kb: { h: 330, hLand: 380, bar: 48, barLand: 48 },
     camera: { d: 8 }, homebar: { w: 160, h: 4, bottom: 9 },
