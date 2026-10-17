@@ -98,7 +98,7 @@ export const register: Register = on => {
       const words = (e.args ?? '').trim().split(/\s+/).filter(Boolean)
       const deviceWord = words.find(word => DEVICES.has(word.toLowerCase()))
       const address = words.find(word => word !== deviceWord)
-      const device = deviceWord?.toLowerCase() || ((await $.store.get('device')) as string | undefined) || 'iphone15'
+      const device = deviceWord?.toLowerCase() || ((await $.store.get('device')) as string | undefined) || 'iphone18promax'
       const at = port ?? (await startHelper($))
 
       // No address, or only a port: find the dev server and its base path.

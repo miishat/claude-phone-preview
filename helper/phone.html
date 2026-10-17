@@ -665,8 +665,8 @@ const q = new URLSearchParams(location.search)
 const askedDevice = ALIASES[q.get('device')] ?? q.get('device')
 const state = {
   url: q.get('url') || store.get('url', 'http://localhost:5173'),
-  device: DEVICES[askedDevice] || askedDevice === 'custom' ? askedDevice : store.get('device', 'iphone15'),
-  mode: ['browser', 'app'].includes(q.get('mode')) ? q.get('mode') : store.get('mode', 'browser'),
+  device: DEVICES[askedDevice] || askedDevice === 'custom' ? askedDevice : store.get('device', 'iphone18promax'),
+  mode: ['browser', 'app'].includes(q.get('mode')) ? q.get('mode') : store.get('mode', 'app'),
   landscape: q.has('landscape') ? q.get('landscape') === '1' : false,
   zoom: (z => (z === 'fit' || (typeof z === 'number' && z >= 25 && z <= 200) ? z : z === 'actual' ? 100 : 'fit'))(store.get('zoom', 'fit')),
   colors: store.get('colors', {}),
@@ -675,7 +675,7 @@ const state = {
   custom: (c => (q.get('w') ? { w: +q.get('w'), h: +q.get('h'), os: q.get('os') === 'android' ? 'android' : 'ios' } : c))(store.get('custom', { w: 390, h: 844, os: 'ios' })),
   network: store.get('network', 'online'),
 }
-if (!DEVICES[state.device] && state.device !== 'custom') state.device = 'iphone15'
+if (!DEVICES[state.device] && state.device !== 'custom') state.device = 'iphone18promax'
 state.custom.w = Math.min(1400, Math.max(240, Math.round(state.custom.w) || 390))
 state.custom.h = Math.min(1400, Math.max(240, Math.round(state.custom.h) || 844))
 

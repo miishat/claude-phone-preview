@@ -12,7 +12,7 @@ The phone frame is a page served by this plugin's helper. The helper also proxie
 3. **Open it.** Call the Browser pane's `preview_start` with
    `http://127.0.0.1:<port>/__phone/?url=<app url, encoded>&device=<device>&mode=<browser|app>`
    where device is an iPhone (`iphone18pro`, `iphone18promax`, `iphone17`, `iphoneair`, `iphone17pro`, `iphone17promax`, `iphone16`, `iphone16plus`, `iphone16pro`, `iphone16promax`, `iphone15`, `iphonese`), an iPad (`ipadmini`, `ipad`, `ipadair`, `ipadair13`, `ipadpro11`, `ipadpro13`), an Android device (`pixel8`, `galaxys24`, `galaxyzfold` with `&fold=1` for open, `pixeltablet`), or `custom&w=<width>&h=<height>&os=<ios|android>`
-   (`browser` is Safari or Chrome, `app` is the Home Screen app; default `iphone15` and `browser`), then `resize_window` with width 480 and height 960 so the pane emulates a touch phone.
+   (`browser` is Safari or Chrome, `app` is the Home Screen app; default `iphone18promax` and `app`; the keyboard and the network start on), then `resize_window` with width 480 and height 960 so the pane emulates a touch phone.
 4. **Tell the user** which device and mode it shows, and that the bottom bar switches device, mode, keyboard and network speed, and the top bar rotation and zoom. With "Reload on edit" on, the frame reloads after Claude edits files, through the plugin's hook.
 
 If the pane is hidden, ask the user to press Ctrl+Shift+B (Cmd+Shift+B on Mac). `/phone [url|port] [device]` also starts the helper, finds the dev server when given no address, and prints the same link.
