@@ -66,12 +66,18 @@
   }
   /* The top bar is one row: the address takes whatever the controls leave. */
   /* As wide as the bottom bar (set from script); the address takes the slack. */
-  .top-bar { width: min(560px, calc(100% - 24px)); flex-wrap: nowrap; justify-content: flex-start; }
-  .top-bar .url { flex: 1 1 auto; max-width: none; min-width: 120px; }
+  /* As wide as its contents: the address field fits the whole address, and
+     only shrinks (scrolling its text) when the window is too narrow. */
+  .top-bar { flex-wrap: nowrap; justify-content: flex-start; }
+  .top-bar .url { flex: 0 1 auto; max-width: none; min-width: 120px; }
+  .top-bar .url input { flex: 0 1 auto; }
+  /* Too narrow for both: the address gets a row of its own. */
+  .top-bar.stacked { flex-wrap: wrap; justify-content: center; }
+  .top-bar.stacked .url { flex: 1 1 100%; }
+  .top-bar.stacked .url input { flex: 1 1 auto; }
   .top-bar .group { flex: none; }
   .top-bar .label, .top-bar .switch .text { display: none; }
   @media (min-width: 900px) { .top-bar .label, .top-bar .switch .text { display: inline; } }
-  @media (max-width: 420px) { .top-bar { flex-wrap: wrap; } .top-bar .url { flex-basis: 100%; } }
   .group { display: flex; align-items: center; gap: 2px; }
   .sep { width: 1px; height: 22px; background: var(--panel-border); margin: 0 2px; }
   .url {
@@ -1416,7 +1422,7 @@ window.addEventListener('message', e => {
     // Keep the address in step with where the app went.
     try {
       const now = new URL(data.path, state.url).href
-      if (now !== state.url) { state.url = now; $('url').value = now; persist() }
+      if (now !== state.url) { state.url = now; $('url').value = now; fitUrl(); persist() }
     } catch {}
     if (JSON.stringify(page) !== before) { buildScreen(); fit(); sendConfig() }
   } else if (data.phonePreview === 'keyboard') {
@@ -1700,6 +1706,7 @@ $('urlForm').onsubmit = e => {
   e.preventDefault()
   state.url = normalize($('url').value)
   $('url').value = state.url
+  fitUrl()
   $('url').blur()
   page = { isCover: false, theme: null, barStyle: null, background: null, widget: null }
   persist()
@@ -1714,14 +1721,21 @@ $('zoomOut').onclick = () => zoomBy(-1)
 $('zoomFit').onclick = () => { state.zoom = 'fit'; persist(); fit() }
 $('external').onclick = () => window.open(state.url, '_blank', 'noopener')
 addEventListener('resize', fit)
-// The top bar matches the bottom bar's width, so the two frame the phone
-// evenly; the address field grows or shrinks to make up the difference.
-new ResizeObserver(() => {
-  const top = document.querySelector('.top-bar')
-  // Never so narrow that the address gets under 120px.
-  const least = top.querySelector('.group').offsetWidth + 120 + 20
-  top.style.width = Math.min(document.body.clientWidth - 24, Math.max(least, document.querySelector('.dock-bar').getBoundingClientRect().width)) + 'px'
-}).observe(document.querySelector('.dock-bar'))
+// The address field is as wide as the address it shows.
+const measure = document.createElement('canvas').getContext('2d')
+function fitUrl() {
+  const input = $('url')
+  measure.font = getComputedStyle(input).font
+  input.style.width = Math.ceil(measure.measureText(input.value || input.placeholder).width) + 6 + 'px'
+  const bar = document.querySelector('.top-bar')
+  const was = bar.classList.contains('stacked')
+  bar.classList.remove('stacked')
+  if (input.scrollWidth > input.clientWidth + 1) bar.classList.add('stacked')
+  // A second row takes height from the phone.
+  if (bar.classList.contains('stacked') !== was && $('device').dataset.size) fit()
+}
+$('url').addEventListener('input', fitUrl)
+addEventListener('resize', fitUrl)
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { buildScreen(); renderKeyboard() })
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement || e.target.closest?.('.menu') || e.metaKey || e.ctrlKey || e.altKey) return
@@ -1757,6 +1771,7 @@ try {
 } catch {}
 
 $('url').value = state.url
+fitUrl()
 persist()
 build()
 navigate()
