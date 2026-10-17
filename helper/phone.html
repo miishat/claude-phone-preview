@@ -208,6 +208,10 @@
   .island { left: 50%; transform: translateX(-50%); background: #000; border-radius: 20px; z-index: 6; }
   .hole { left: 50%; transform: translateX(-50%); background: #050505; border-radius: 50%; z-index: 6; box-shadow: inset 0 0 0 2px #1c1c1c; }
   .homebar { left: 50%; transform: translateX(-50%); border-radius: 3px; z-index: 6; pointer-events: none; }
+  /* The screen's corners, drawn on the bezel above the screen rather than in
+     it: anything inside the screen's rounded clip is cut by that clip, and a
+     page's backdrop-filter is drawn past the clip anyway. */
+  .caps { position: absolute; pointer-events: none; z-index: 1; }
   .glare { inset: 0; pointer-events: none; z-index: 7; background: linear-gradient(125deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 32%); }
   .earpiece { position: absolute; left: 50%; transform: translateX(-50%); height: 6px; border-radius: 3px; }
   .camera { position: absolute; border-radius: 50%; }
@@ -374,6 +378,7 @@
           <div class="kb" id="kb" aria-hidden="true"></div>
           <div class="loading" id="loading"><div class="spinner"></div><div>Loading…</div></div>
         </div>
+        <div class="caps" id="caps"></div>
       </div>
     </div>
   </div>
@@ -963,6 +968,8 @@ function buildBody() {
     left: bz.l + 'px', top: bz.t + 'px', width: sw + 'px', height: sh + 'px', borderRadius: d.radius + 'px',
     clipPath: `inset(0 round ${d.radius}px)`,
   })
+  Object.assign($('caps').style, { left: bz.l + 'px', top: bz.t + 'px', width: sw + 'px', height: sh + 'px' })
+  $('caps').innerHTML = d.radius ? CORNERS.map(([v, h]) => cornerCap(d, v, h)).join('') : ''
   face.style.clipPath = `inset(0 round ${bodyRadius - rim}px)`
 }
 
@@ -1058,6 +1065,33 @@ function buildScreen() {
   $('chrome').innerHTML = parts.join('')
   applyLayout(L)
   return L
+}
+
+// A screen corner painted in the bezel's colour. Apple's screens round with
+// a continuous curve that starts about 1.53 radii from the corner, which
+// reads rounder than a circle of the same radius; Android's are circular.
+const CORNERS = [['top', 'left'], ['top', 'right'], ['bottom', 'left'], ['bottom', 'right']]
+function cornerCap(d, v, h) {
+  const R = d.radius, bezel = '#050506'
+  const base = `position:absolute;${v}:-1px;${h}:-1px`
+  if (d.os === 'ios') {
+    const cap = continuousCorner(R, bezel)
+    return `<div class="corner" style="${base};width:${cap.size}px;height:${cap.size}px;transform:scale(${h === 'left' ? 1 : -1}, ${v === 'top' ? 1 : -1})">${cap.svg}</div>`
+  }
+  const at = `${h === 'left' ? 100 : 0}% ${v === 'top' ? 100 : 0}%`
+  return `<div class="corner" style="${base};width:${R + 1}px;height:${R + 1}px;background:radial-gradient(circle at ${at}, transparent ${R - 0.75}px, ${bezel} ${R + 0.25}px)"></div>`
+}
+
+// The top-left corner outside Apple's continuous rounded rectangle of radius
+// r, as an SVG the size of the curve plus a 1px overlap past the edges.
+// The points are the Bezier fit of UIKit's continuous corner.
+function continuousCorner(r, color) {
+  const k = n => (n * r + 1).toFixed(2)
+  const size = Math.ceil(1.52866483 * r) + 2
+  const d = `M0 0H${size}V1H${k(1.52866483)}C${k(1.08849299)} 1 ${k(0.86840701)} 1 ${k(0.63149399)} ${k(0.074911)}`
+    + `C${k(0.37282401)} ${k(0.16905001)} ${k(0.16905001)} ${k(0.37282401)} ${k(0.074911)} ${k(0.63149399)}`
+    + `C1 ${k(0.86840701)} 1 ${k(1.08849299)} 1 ${k(1.52866483)}V${size}H0Z`
+  return { size, svg: `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block"><path d="${d}" fill="${color}"/></svg>` }
 }
 
 // Places the app and sizes the browser's bars for the current layout. Kept
