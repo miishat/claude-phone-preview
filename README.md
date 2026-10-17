@@ -18,17 +18,33 @@ Ask Claude for "the phone" in any session, or run `/phone [url|port] [device]`. 
 - `hooks/register.tsx` registers `/phone` and, after each edit Claude makes, asks open frames to reload.
 - `skills/phone` tells Claude how to open the frame in the Browser pane.
 
-## Install (local folder)
+## Install
+
+You need the Claude desktop app (the phone opens in its Browser pane), a recent Claude Code, and Node on your PATH. In a Claude Code session:
+
+```
+/plugin marketplace add miishat/claude-phone-preview
+```
+
+```
+/plugin install phone-preview@phone-preview
+```
+
+Then run `/reload-plugins` (or start a new session) and ask for "the phone". The repository is private for now, so your GitHub account needs access to it, and git on your machine must be signed in to GitHub.
+
+To update later, run `/plugin marketplace update phone-preview`.
+
+### From a local folder
 
 ```bash
-claude plugin marketplace add C:/Users/misha/phone-preview
+claude plugin marketplace add <path to this folder>
 ```
 
 ```bash
 claude plugin install phone-preview@phone-preview
 ```
 
-The plugin runs from this folder. After editing it, run `/reload-plugins` in a session.
+The plugin then runs from that folder; after editing it, run `/reload-plugins`.
 
 ## Develop
 
